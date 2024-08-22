@@ -1,0 +1,95 @@
+---
+title: "TADPOLE_BSWiMS"
+author: "Jose Tamez"
+date: "`r Sys.Date()`"
+output: 
+  html_document: 
+    toc: yes
+    fig_caption: yes
+    number_sections: yes
+  word_document: 
+    reference_docx: WordStyle_FRESA.docx
+    toc: yes
+    fig_caption: yes
+editor_options:
+  chunk_output_type: inline
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(collapse = TRUE, warning = FALSE, message = FALSE,comment = "#>")
+```
+
+# TADPOLE and BSWiMS
+
+### Loading the libraries
+
+```{r}
+library("FRESA.CAD")
+library(survival)
+library(readxl)
+library(igraph)
+op <- par(no.readonly = TRUE)
+pander::panderOptions('digits', 3)
+pander::panderOptions('table.split.table', 400)
+pander::panderOptions('keep.trailing.zeros',TRUE)
+
+```
+
+## Loading BSWiMS Results
+
+```{r}
+
+load("./TADPOLE_BSWIMS_Results.RData")
+
+pander::pander(table(TADPOLE_Conv_TRAIN$status))
+pander::pander(table(TADPOLE_Conv_TEST$status))
+par(op)
+
+```
+
+
+### Learning
+
+```{r results = "asis", warning = FALSE, dpi=600, fig.height= 6.0, fig.width= 8.0}
+bConvmlLZO <- LASSO_1SE(Surv(TimeToEvent,status)~.,TADPOLE_Conv_TRAIN)
+
+pander::pander(bConvmlLZO$selectedfeatures)
+
+ptestl <- predict(bConvmlLZO,TADPOLE_Conv_TEST)
+cval <- mean(ptestl)
+ptestl <- predict(bConvmlLZO,TADPOLE_Conv_TEST) - cval
+
+boxplot(ptestl~TADPOLE_Conv_TEST$status)
+ptestr <- exp(ptestl)
+
+predsurv <- cbind(TADPOLE_Conv_TEST$TimeToEvent,
+                  TADPOLE_Conv_TEST$status,
+                  ptestl,
+                  ptestr)
+
+prSurv <- predictionStats_survival(predsurv,"MCI to  AD Conversion")
+pander::pander(prSurv$CIRisk)
+pander::pander(prSurv$CILp)
+pander::pander(prSurv$spearmanCI)
+
+prBin <- predictionStats_binary(cbind(TADPOLE_Conv_TEST$status,ptestl),"MCI to  AD Conversion")
+pander::pander(prBin$aucs)
+pander::pander(prBin$CM.analysis$tab)
+
+par(op)
+
+```
+
+
+
+
+
+### Saving the enviroment
+```{r}
+save.image("./TADPOLE_LASSO_Results.RData")
+
+
+```
+

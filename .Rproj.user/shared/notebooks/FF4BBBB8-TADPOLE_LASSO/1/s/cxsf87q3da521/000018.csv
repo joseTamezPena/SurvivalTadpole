@@ -1,0 +1,28 @@
+"0","pander::pander(prSurv$CIRisk)"
+"1","
+------------------------
+ median   lower   upper 
+-------- ------- -------
+ 0.846    0.81    0.879 
+------------------------
+
+"
+"0","pander::pander(prSurv$CILp)"
+"1","
+------------------------
+ median   lower   upper 
+-------- ------- -------
+ 0.845    0.797   0.886 
+------------------------
+
+"
+"0","pander::pander(prSurv$spearmanCI)"
+"1","
+-----------------------
+  50%    2.5%    97.5% 
+------- ------- -------
+ 0.461   0.289   0.609 
+-----------------------
+
+"
+"0","prBin <- predictionStats_binary(cbind(TADPOLE_Conv_TEST$status,ptestl),""MCI to  AD Conversion"")"

@@ -1,0 +1,3 @@
+"0","ptestr <- predict(bConvml,TADPOLE_Conv_TEST,type=""risk"")"
+"0","eventCases <- subset(TADPOLE_Conv_TEST,status==1)"
+"0","plot(1.0/ptestr[rownames(eventCases)]~eventCases$TimeToEvent)"

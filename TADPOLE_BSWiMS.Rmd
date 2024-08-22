@@ -1,0 +1,423 @@
+---
+title: "TADPOLE_BSWiMS"
+author: "Jose Tamez"
+date: "`r Sys.Date()`"
+output: 
+  html_document: 
+    toc: yes
+    fig_caption: yes
+    number_sections: yes
+  word_document: 
+    reference_docx: WordStyle_FRESA.docx
+    toc: yes
+    fig_caption: yes
+editor_options:
+  chunk_output_type: inline
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(collapse = TRUE, warning = FALSE, message = FALSE,comment = "#>")
+```
+
+# TADPOLE and BSWiMS
+
+### Loading the libraries
+
+```{r}
+library("FRESA.CAD")
+library(survival)
+library(readxl)
+library(igraph)
+op <- par(no.readonly = TRUE)
+pander::panderOptions('digits', 3)
+pander::panderOptions('table.split.table', 400)
+pander::panderOptions('keep.trailing.zeros',TRUE)
+
+```
+
+## The data set
+
+```{r}
+TADPOLE_D1_D2 <- read.csv("./Data/TADPOLE/TADPOLE_D1_D2.csv")
+TADPOLE_D1_D2_Dict <- read.csv("./Data/TADPOLE/TADPOLE_D1_D2_Dict.csv")
+TADPOLE_D1_D2_Dict_LR <- as.data.frame(read_excel("./Data/TADPOLE/TADPOLE_D1_D2_Dict_LR.xlsx",sheet = "LeftRightFeatures"))
+
+
+rownames(TADPOLE_D1_D2_Dict) <- TADPOLE_D1_D2_Dict$FLDNAME
+
+```
+
+## Conditioning the data
+
+```{r results = "asis", warning = FALSE, dpi=600, fig.height= 6.0, fig.width= 8.0}
+
+# mm3 to mm
+isVolume <- c("Ventricles","Hippocampus","WholeBrain","Entorhinal","Fusiform","MidTemp","ICV",
+              TADPOLE_D1_D2_Dict$FLDNAME[str_detect(TADPOLE_D1_D2_Dict$TEXT,"Volume")]
+              )
+
+
+#TADPOLE_D1_D2[,isVolume] <- apply(TADPOLE_D1_D2[,isVolume],2,'^',(1/3))
+TADPOLE_D1_D2[,isVolume] <- TADPOLE_D1_D2[,isVolume]^(1/3)
+
+# mm2 to mm
+isArea <- TADPOLE_D1_D2_Dict$FLDNAME[str_detect(TADPOLE_D1_D2_Dict$TEXT,"Area")]
+TADPOLE_D1_D2[,isArea] <- sqrt(TADPOLE_D1_D2[,isArea])
+
+# Get only cross sectional measurements
+FreeSurfersetCross <- str_detect(colnames(TADPOLE_D1_D2),"UCSFFSX")
+
+# The subset of baseline measurements
+baselineTadpole <- subset(TADPOLE_D1_D2,VISCODE=="bl")
+table(baselineTadpole$DX)
+
+rownames(baselineTadpole) <- baselineTadpole$PTID
+
+
+validBaselineTadpole <- cbind(DX=baselineTadpole$DX,
+                                 AGE=baselineTadpole$AGE,
+                                 Gender=1*(baselineTadpole$PTGENDER=="Female"),
+                                 ADAS11=baselineTadpole$ADAS11,
+                                 ADAS13=baselineTadpole$ADAS13,
+                                 MMSE=baselineTadpole$MMSE,
+                                 RAVLT_immediate=baselineTadpole$RAVLT_immediate,
+                                 RAVLT_learning=baselineTadpole$RAVLT_learning,
+                                 RAVLT_forgetting=baselineTadpole$RAVLT_forgetting,
+                                 RAVLT_perc_forgetting=baselineTadpole$RAVLT_perc_forgetting,
+                                 FAQ=baselineTadpole$FAQ,
+                                 APOE4=1*(as.numeric(baselineTadpole$APOE4)>0),
+                                 Ventricles=baselineTadpole$Ventricles,
+                                 Hippocampus=baselineTadpole$Hippocampus,
+                                 WholeBrain=baselineTadpole$WholeBrain,
+                                 Entorhinal=baselineTadpole$Entorhinal,
+                                 Fusiform=baselineTadpole$Fusiform,
+                                 MidTemp=baselineTadpole$MidTemp,
+                                 ICV=baselineTadpole$ICV,
+                                 ABETA=as.numeric(baselineTadpole$ABETA_UPENNBIOMK9_04_19_17),
+                                 TAU=as.numeric(baselineTadpole$TAU_UPENNBIOMK9_04_19_17),
+                                 PTAU=as.numeric(baselineTadpole$PTAU_UPENNBIOMK9_04_19_17),
+                                 baselineTadpole[,FreeSurfersetCross])
+
+pander::pander(summary(validBaselineTadpole$APOE4))
+pander::pander(summary(validBaselineTadpole$ABETA))
+pander::pander(summary(validBaselineTadpole$TAU))
+pander::pander(summary(validBaselineTadpole$PTAU))
+
+LeftFields <- TADPOLE_D1_D2_Dict_LR$LFN
+names(LeftFields) <- LeftFields
+LeftFields <- LeftFields[LeftFields %in% colnames(validBaselineTadpole)]
+RightFields <- TADPOLE_D1_D2_Dict_LR$RFN
+names(RightFields) <- RightFields
+RightFields <- RightFields[RightFields %in% colnames(validBaselineTadpole)]
+
+## Normalize to ICV
+validBaselineTadpole$Ventricles=validBaselineTadpole$Ventricles/validBaselineTadpole$ICV
+validBaselineTadpole$Hippocampus=validBaselineTadpole$Hippocampus/validBaselineTadpole$ICV
+validBaselineTadpole$WholeBrain=validBaselineTadpole$WholeBrain/validBaselineTadpole$ICV
+validBaselineTadpole$Entorhinal=validBaselineTadpole$Entorhinal/validBaselineTadpole$ICV
+validBaselineTadpole$Fusiform=validBaselineTadpole$Fusiform/validBaselineTadpole$ICV
+validBaselineTadpole$MidTemp=validBaselineTadpole$MidTemp/validBaselineTadpole$ICV
+
+leftData <- validBaselineTadpole[,LeftFields]/validBaselineTadpole$ICV
+RightData <- validBaselineTadpole[,RightFields]/validBaselineTadpole$ICV
+
+## get mean and relative difference 
+meanLeftRight <- (leftData + RightData)/2
+difLeftRight <- abs(leftData - RightData)
+reldifLeftRight <- difLeftRight/meanLeftRight
+colnames(meanLeftRight) <- paste("M",colnames(meanLeftRight),sep="_")
+colnames(difLeftRight) <- paste("D",colnames(difLeftRight),sep="_")
+colnames(reldifLeftRight) <- paste("RD",colnames(reldifLeftRight),sep="_")
+
+
+validBaselineTadpole <- validBaselineTadpole[,!(colnames(validBaselineTadpole) %in% 
+                                               c(LeftFields,RightFields))]
+validBaselineTadpole <- cbind(validBaselineTadpole,meanLeftRight,reldifLeftRight)
+
+## Remove columns with too many NA more than %35 of NA
+nacount <- apply(is.na(validBaselineTadpole),2,sum)/nrow(validBaselineTadpole) < 0.35
+diagnose <- validBaselineTadpole$DX
+pander::pander(table(diagnose))
+validBaselineTadpole <- validBaselineTadpole[,nacount]
+## Remove character columns
+ischar <- sapply(validBaselineTadpole,class) == "character"
+validBaselineTadpole <- validBaselineTadpole[,!ischar]
+## Place back diagnose
+validBaselineTadpole$DX <- diagnose
+
+pander::pander(summary(validBaselineTadpole$APOE4))
+pander::pander(summary(validBaselineTadpole$ABETA))
+pander::pander(summary(validBaselineTadpole$TAU))
+pander::pander(summary(validBaselineTadpole$PTAU))
+
+
+validBaselineTadpole <- validBaselineTadpole[complete.cases(validBaselineTadpole),]
+ischar <- sapply(validBaselineTadpole,class) == "character"
+validBaselineTadpole[,!ischar] <- sapply(validBaselineTadpole[,!ischar],as.numeric)
+
+pander::pander(summary(validBaselineTadpole$APOE4))
+pander::pander(summary(validBaselineTadpole$ABETA))
+pander::pander(summary(validBaselineTadpole$TAU))
+pander::pander(summary(validBaselineTadpole$PTAU))
+
+colnames(validBaselineTadpole) <- str_remove_all(colnames(validBaselineTadpole),"_UCSFFSX_11_02_15_UCSFFSX51_08_01_16")
+colnames(validBaselineTadpole) <- str_replace_all(colnames(validBaselineTadpole)," ","_")
+validBaselineTadpole$LONISID <- NULL
+validBaselineTadpole$IMAGEUID <- NULL
+validBaselineTadpole$LONIUID <- NULL
+
+diagnose <- as.character(validBaselineTadpole$DX)
+validBaselineTadpole$DX <- diagnose
+pander::pander(table(validBaselineTadpole$DX))
+
+
+validDX <- c("NL","MCI","Dementia")
+
+validBaselineTadpole <- validBaselineTadpole[validBaselineTadpole$DX %in% validDX,]
+validBaselineTadpole$DX <- as.factor(validBaselineTadpole$DX)
+pander::pander(table(validBaselineTadpole$DX))
+
+
+
+```
+
+### Correlation Matrix  Data
+
+The heat map of the testing set.
+
+```{r results = "asis", warning = FALSE, dpi=600, fig.height= 6.0, fig.width= 8.0}
+
+cormat <- cor(validBaselineTadpole[,colnames(validBaselineTadpole) != "DX"],method="spearman")
+diag(cormat) <- 0;
+corrmax <- apply(cormat,2,max)
+whomax <- colnames(cormat)[corrmax>0.75]
+gplots::heatmap.2(abs(cormat[whomax,whomax]),
+                  trace = "none",
+                  scale = "none",
+                  mar = c(10,10),
+                  col=rev(heat.colors(5)),
+                  main = "Baseline TADPOLE Correlation",
+                  cexRow = 0.5,
+                  cexCol = 0.5,
+                  key.title=NA,
+                  key.xlab="Spearman Correlation",
+                  xlab="Feature", ylab="Feature")
+par(op)
+
+```
+
+
+## Get the Time To Event on MCI Subjects
+
+```{r results = "asis", warning = FALSE, dpi=600, fig.height= 6.0, fig.width= 8.0}
+
+subjectsID <- rownames(validBaselineTadpole)
+visitsID <- unique(TADPOLE_D1_D2$VISCODE)
+baseDx <- TADPOLE_D1_D2[TADPOLE_D1_D2$VISCODE=="bl",c("PTID","DX","EXAMDATE")]
+rownames(baseDx) <- baseDx$PTID 
+baseDx <- baseDx[subjectsID,]
+lastDx <- baseDx
+toDementia <- baseDx
+table(lastDx$DX)
+hasDementia <- lastDx$PTID[str_detect(lastDx$DX,"Dementia")]
+
+
+for (vid in visitsID)
+{
+  DxValue <- TADPOLE_D1_D2[TADPOLE_D1_D2$VISCODE==vid,c("PTID","DX","EXAMDATE")]
+  rownames(DxValue) <- DxValue$PTID 
+  DxValue <- DxValue[DxValue$PTID %in% subjectsID,]
+  noDX <- DxValue$PTID[nchar(DxValue$DX) < 1]
+  print(length(noDX))
+  DxValue[noDX,] <- lastDx[noDX,]
+  inLast <- lastDx$PTID[lastDx$PTID %in% DxValue$PTID]
+  print(length(inLast))
+  lastDx[inLast,] <- DxValue[inLast,]
+  noDementia <- !(toDementia$PTID %in% hasDementia)
+  toDementia[noDementia,] <- lastDx[noDementia,]
+  hasDementia <- unique(c(hasDementia,lastDx$PTID[str_detect(lastDx$DX,"Dementia")]))
+}
+table(lastDx$DX)
+baseMCI <-baseDx$PTID[baseDx$DX == "MCI"]
+lastDementia <- lastDx$PTID[str_detect(lastDx$DX,"Dementia")]
+lastDementia2 <- toDementia$PTID[str_detect(toDementia$DX,"Dementia")]
+lastNL <- lastDx$PTID[str_detect(lastDx$DX,"NL")]
+
+MCIatBaseline <- baseDx[baseMCI,]
+MCIatEvent <- toDementia[baseMCI,]
+MCIatLast <- lastDx[baseMCI,]
+
+MCIconverters <- MCIatBaseline[baseMCI %in% lastDementia,]
+MCI_No_converters <- MCIatBaseline[!(baseMCI %in% MCIconverters$PTID),]
+MCIconverters$TimeToEvent <- (as.Date(toDementia[MCIconverters$PTID,"EXAMDATE"]) 
+                                   - as.Date(MCIconverters$EXAMDATE))
+
+sum(MCIconverters$TimeToEvent ==0)
+
+
+MCIconverters$AtEventDX <- MCIatEvent[MCIconverters$PTID,"DX"]
+MCIconverters$LastDX <- MCIatLast[MCIconverters$PTID,"DX"]
+
+MCI_No_converters$TimeToEvent <- (as.Date(lastDx[MCI_No_converters$PTID,"EXAMDATE"]) 
+                                   - as.Date(MCI_No_converters$EXAMDATE))
+
+MCI_No_converters$LastDX <- MCIatLast[MCI_No_converters$PTID,"DX"]
+
+MCI_No_converters <- subset(MCI_No_converters,TimeToEvent > 0)
+
+
+
+```
+
+# Prognosis MCI to AD Conversion
+
+## the set
+```{r results = "asis", warning = FALSE, dpi=600, fig.height= 6.0, fig.width= 8.0}
+TrainFraction <- 0.60;
+
+MCIPrognosisIDs <- c(MCIconverters$PTID,MCI_No_converters$PTID)
+
+TADPOLECrossMRI <- validBaselineTadpole[MCIPrognosisIDs,]
+table(TADPOLECrossMRI$DX)
+TADPOLECrossMRI$DX <- NULL
+TADPOLECrossMRI$status <- 1*(rownames(TADPOLECrossMRI) %in% MCIconverters$PTID)
+table(TADPOLECrossMRI$status)
+TADPOLECrossMRI$TimeToEvent <- numeric(nrow(TADPOLECrossMRI))
+TADPOLECrossMRI[MCIconverters$PTID,"TimeToEvent"] <- MCIconverters$TimeToEvent
+TADPOLECrossMRI[MCI_No_converters$PTID,"TimeToEvent"] <- MCI_No_converters$TimeToEvent
+
+TADPOLE_Cases <- subset(TADPOLECrossMRI,status==1)
+TADPOLE_Controls <- subset(TADPOLECrossMRI,status==0)
+trainCasesSet <- sample(nrow(TADPOLE_Cases),nrow(TADPOLE_Cases)*TrainFraction)
+trainControlSet <- sample(nrow(TADPOLE_Controls),nrow(TADPOLE_Controls)*TrainFraction)
+
+TADPOLE_Conv_TRAIN <- rbind(TADPOLE_Cases[trainCasesSet,],TADPOLE_Controls[trainControlSet,])
+TADPOLE_Conv_TEST <- TADPOLECrossMRI[!(rownames(TADPOLECrossMRI) %in%
+                                         rownames(TADPOLE_Conv_TRAIN)),]
+
+pander::pander(table(TADPOLE_Conv_TRAIN$status))
+pander::pander(table(TADPOLE_Conv_TEST$status))
+par(op)
+
+
+
+```
+
+### Learning
+
+```{r results = "asis", warning = FALSE, dpi=600, fig.height= 6.0, fig.width= 8.0}
+
+bConvml <- BSWiMS.model(Surv(TimeToEvent,status)~1,TADPOLE_Conv_TRAIN,NumberofRepeats = 20)
+pander::pander(bConvml$bagging$Jaccard.SM)
+
+fs <- bConvml$bagging$frequencyTable
+barplot(fs[order(-fs)],las=2,main="Selected Features",cex.names = 0.5)
+sm <- summary(bConvml)
+pander::pander(sm$coefficients)
+pander::pander(bConvml$univariate[bConvml$selectedfeatures,])
+
+ptestl <- predict(bConvml,TADPOLE_Conv_TEST,type="lp")
+boxplot(ptestl~TADPOLE_Conv_TEST$status)
+ptestr <- predict(bConvml,TADPOLE_Conv_TEST,type="risk")
+eventCases <- subset(TADPOLE_Conv_TEST,status==1)
+plot(1.0/ptestr[rownames(eventCases)]~eventCases$TimeToEvent)
+pander::pander(cor.test(eventCases$TimeToEvent,1.0/ptestr[rownames(eventCases)],method="spearman"))
+
+
+
+perdsurv <- cbind(TADPOLE_Conv_TEST$TimeToEvent,
+                  TADPOLE_Conv_TEST$status,
+                  ptestl,
+                  ptestr)
+prSurv <- predictionStats_survival(perdsurv,"MCI to  AD Conversion")
+pander::pander(prSurv$CIRisk)
+pander::pander(prSurv$CILp)
+pander::pander(prSurv$spearmanCI)
+
+prBin <- predictionStats_binary(cbind(TADPOLE_Conv_TEST$status,ptestl),"MCI to  AD Conversion")
+pander::pander(prBin$aucs)
+pander::pander(prBin$CM.analysis$tab)
+
+par(op)
+
+```
+
+
+
+
+### The formula network
+
+```{r results = "asis", warning = FALSE, dpi=600, fig.height= 6.0, fig.width= 8.0}
+cmax <- apply(bConvml$bagging$formulaNetwork,2,max)
+cnames <- names(cmax[cmax>=0.25])
+cmax <- cmax[cnames]
+
+adma <- bConvml$bagging$formulaNetwork[cnames,cnames]
+
+adma[adma<0.15] <- 0;
+gr <- graph_from_adjacency_matrix(adma,mode = "undirected",diag = FALSE,weighted=TRUE)
+gr$layout <- layout_with_fr
+
+fc <- cluster_optimal(gr)
+plot(fc, gr,
+     edge.width=5*E(gr)$weight,
+     vertex.size=20*cmax,
+     vertex.label.cex=0.75,
+     vertex.label.dist=0,
+     main="MCI to Dementia Conversion")
+par(op)
+
+```
+
+
+
+### MCI to Dementia table
+```{r}
+
+clusterFeatures <- fc$names
+
+tableMCI_to_Dem <- sm$coefficients[clusterFeatures,
+                                   c("Estimate",
+                                     "lower",
+                                     "HR",
+                                     "upper",
+                                     "full.AUC",
+                                     "Delta.AUC",
+                                     "z.IDI",
+                                     "Frequency")]
+
+nugget <- fc$membership
+names(nugget) <- clusterFeatures
+
+tableMCI_to_Dem$Cluster <- nugget[rownames(tableMCI_to_Dem)]
+
+rnames <- clusterFeatures[str_detect(clusterFeatures,"ST")]
+frnames <- rnames
+rnames <- str_replace_all(rnames,"M_","")
+rnames <- str_replace_all(rnames,"RD_","")
+rnames <- str_replace_all(rnames,"Ba_","")
+rnames <- str_replace_all(rnames,"De_","")
+description <- character()
+
+for (ddet in c(1:length(rnames)))
+{
+  description <- c(description,TADPOLE_D1_D2_Dict$TEXT[str_detect(TADPOLE_D1_D2_Dict$FLDNAME,rnames[ddet])][1])
+}
+names(description) <- frnames
+
+tableMCI_to_Dem$Description <- description[rownames(tableMCI_to_Dem)]
+pander::pander(tableMCI_to_Dem)
+
+
+```
+
+
+### Saving the enviroment
+```{r}
+save.image("./TADPOLE_BSWIMS_Results.RData")
+
+
+```
+

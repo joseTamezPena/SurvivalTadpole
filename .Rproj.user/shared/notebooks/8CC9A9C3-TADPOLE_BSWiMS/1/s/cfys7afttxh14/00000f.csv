@@ -1,0 +1,261 @@
+"0",""
+"0","# mm3 to mm"
+"0","isVolume <- c(""Ventricles"",""Hippocampus"",""WholeBrain"",""Entorhinal"",""Fusiform"",""MidTemp"",""ICV"","
+"0","              TADPOLE_D1_D2_Dict$FLDNAME[str_detect(TADPOLE_D1_D2_Dict$TEXT,""Volume"")]"
+"0","              )"
+"0",""
+"0",""
+"0","#TADPOLE_D1_D2[,isVolume] <- apply(TADPOLE_D1_D2[,isVolume],2,'^',(1/3))"
+"0","TADPOLE_D1_D2[,isVolume] <- TADPOLE_D1_D2[,isVolume]^(1/3)"
+"0",""
+"0","# mm2 to mm"
+"0","isArea <- TADPOLE_D1_D2_Dict$FLDNAME[str_detect(TADPOLE_D1_D2_Dict$TEXT,""Area"")]"
+"0","TADPOLE_D1_D2[,isArea] <- sqrt(TADPOLE_D1_D2[,isArea])"
+"0",""
+"0","# Get only cross sectional measurements"
+"0","FreeSurfersetCross <- str_detect(colnames(TADPOLE_D1_D2),""UCSFFSX"")"
+"0",""
+"0","# The subset of baseline measurements"
+"0","baselineTadpole <- subset(TADPOLE_D1_D2,VISCODE==""bl"")"
+"0","table(baselineTadpole$DX)"
+"1","
+"
+"1","                "
+"1","       Dementia "
+"1","Dementia to MCI "
+"1","            MCI "
+"1","MCI to Dementia "
+"1","      MCI to NL "
+"1","             NL "
+"1","      NL to MCI "
+"1","
+"
+"1","              7 "
+"1","            336 "
+"1","              1 "
+"1","            864 "
+"1","              5 "
+"1","              2 "
+"1","            521 "
+"1","              1 "
+"1","
+"
+"0","rownames(baselineTadpole) <- baselineTadpole$PTID"
+"0",""
+"0",""
+"0","validBaselineTadpole <- cbind(DX=baselineTadpole$DX,"
+"0","                                 AGE=baselineTadpole$AGE,"
+"0","                                 Gender=1*(baselineTadpole$PTGENDER==""Female""),"
+"0","                                 ADAS11=baselineTadpole$ADAS11,"
+"0","                                 ADAS13=baselineTadpole$ADAS13,"
+"0","                                 MMSE=baselineTadpole$MMSE,"
+"0","                                 RAVLT_immediate=baselineTadpole$RAVLT_immediate,"
+"0","                                 RAVLT_learning=baselineTadpole$RAVLT_learning,"
+"0","                                 RAVLT_forgetting=baselineTadpole$RAVLT_forgetting,"
+"0","                                 RAVLT_perc_forgetting=baselineTadpole$RAVLT_perc_forgetting,"
+"0","                                 FAQ=baselineTadpole$FAQ,"
+"0","                                 APOE4=1*(as.numeric(baselineTadpole$APOE4)>0),"
+"0","                                 Ventricles=baselineTadpole$Ventricles,"
+"0","                                 Hippocampus=baselineTadpole$Hippocampus,"
+"0","                                 WholeBrain=baselineTadpole$WholeBrain,"
+"0","                                 Entorhinal=baselineTadpole$Entorhinal,"
+"0","                                 Fusiform=baselineTadpole$Fusiform,"
+"0","                                 MidTemp=baselineTadpole$MidTemp,"
+"0","                                 ICV=baselineTadpole$ICV,"
+"0","                                 ABETA=as.numeric(baselineTadpole$ABETA_UPENNBIOMK9_04_19_17),"
+"0","                                 TAU=as.numeric(baselineTadpole$TAU_UPENNBIOMK9_04_19_17),"
+"0","                                 PTAU=as.numeric(baselineTadpole$PTAU_UPENNBIOMK9_04_19_17),"
+"0","                                 baselineTadpole[,FreeSurfersetCross])"
+"0",""
+"0","pander::pander(summary(validBaselineTadpole$APOE4))"
+"1","
+---------------------------------------------------------
+ Min.   1st Qu.   Median   Mean    3rd Qu.   Max.   NA's 
+------ --------- -------- ------- --------- ------ ------
+  0        0        0      0.469      1       1      12  
+---------------------------------------------------------
+
+"
+"0","pander::pander(summary(validBaselineTadpole$ABETA))"
+"1","
+--------------------------------------------------------
+ Min.   1st Qu.   Median   Mean   3rd Qu.   Max.   NA's 
+------ --------- -------- ------ --------- ------ ------
+ 203      596      854     1053    1396     3592   523  
+--------------------------------------------------------
+
+"
+"0","pander::pander(summary(validBaselineTadpole$TAU))"
+"1","
+--------------------------------------------------------
+ Min.   1st Qu.   Median   Mean   3rd Qu.   Max.   NA's 
+------ --------- -------- ------ --------- ------ ------
+ 81.5     194      258     287      350     852    527  
+--------------------------------------------------------
+
+"
+"0","pander::pander(summary(validBaselineTadpole$PTAU))"
+"1","
+--------------------------------------------------------
+ Min.   1st Qu.   Median   Mean   3rd Qu.   Max.   NA's 
+------ --------- -------- ------ --------- ------ ------
+ 8.21    17.4      24.2    27.6     34      103    528  
+--------------------------------------------------------
+
+"
+"0","LeftFields <- TADPOLE_D1_D2_Dict_LR$LFN"
+"0","names(LeftFields) <- LeftFields"
+"0","LeftFields <- LeftFields[LeftFields %in% colnames(validBaselineTadpole)]"
+"0","RightFields <- TADPOLE_D1_D2_Dict_LR$RFN"
+"0","names(RightFields) <- RightFields"
+"0","RightFields <- RightFields[RightFields %in% colnames(validBaselineTadpole)]"
+"0",""
+"0","## Normalize to ICV"
+"0","validBaselineTadpole$Ventricles=validBaselineTadpole$Ventricles/validBaselineTadpole$ICV"
+"0","validBaselineTadpole$Hippocampus=validBaselineTadpole$Hippocampus/validBaselineTadpole$ICV"
+"0","validBaselineTadpole$WholeBrain=validBaselineTadpole$WholeBrain/validBaselineTadpole$ICV"
+"0","validBaselineTadpole$Entorhinal=validBaselineTadpole$Entorhinal/validBaselineTadpole$ICV"
+"0","validBaselineTadpole$Fusiform=validBaselineTadpole$Fusiform/validBaselineTadpole$ICV"
+"0","validBaselineTadpole$MidTemp=validBaselineTadpole$MidTemp/validBaselineTadpole$ICV"
+"0",""
+"0","leftData <- validBaselineTadpole[,LeftFields]/validBaselineTadpole$ICV"
+"0","RightData <- validBaselineTadpole[,RightFields]/validBaselineTadpole$ICV"
+"0",""
+"0","## get mean and relative difference "
+"0","meanLeftRight <- (leftData + RightData)/2"
+"0","difLeftRight <- abs(leftData - RightData)"
+"0","reldifLeftRight <- difLeftRight/meanLeftRight"
+"0","colnames(meanLeftRight) <- paste(""M"",colnames(meanLeftRight),sep=""_"")"
+"0","colnames(difLeftRight) <- paste(""D"",colnames(difLeftRight),sep=""_"")"
+"0","colnames(reldifLeftRight) <- paste(""RD"",colnames(reldifLeftRight),sep=""_"")"
+"0",""
+"0",""
+"0","validBaselineTadpole <- validBaselineTadpole[,!(colnames(validBaselineTadpole) %in% "
+"0","                                               c(LeftFields,RightFields))]"
+"0","validBaselineTadpole <- cbind(validBaselineTadpole,meanLeftRight,reldifLeftRight)"
+"0",""
+"0","## Remove columns with too many NA more than %35 of NA"
+"0","nacount <- apply(is.na(validBaselineTadpole),2,sum)/nrow(validBaselineTadpole) < 0.35"
+"0","diagnose <- validBaselineTadpole$DX"
+"0","pander::pander(table(diagnose))"
+"1","
+-------------------------------------------------------------------------------------------
+ &nbsp;   Dementia   Dementia to MCI   MCI   MCI to Dementia   MCI to NL   NL    NL to MCI 
+-------- ---------- ----------------- ----- ----------------- ----------- ----- -----------
+   7        336             1          864          5              2       521       1     
+-------------------------------------------------------------------------------------------
+
+"
+"0","validBaselineTadpole <- validBaselineTadpole[,nacount]"
+"0","## Remove character columns"
+"0","ischar <- sapply(validBaselineTadpole,class) == ""character"""
+"0","validBaselineTadpole <- validBaselineTadpole[,!ischar]"
+"0","## Place back diagnose"
+"0","validBaselineTadpole$DX <- diagnose"
+"0",""
+"0","pander::pander(summary(validBaselineTadpole$APOE4))"
+"1","
+---------------------------------------------------------
+ Min.   1st Qu.   Median   Mean    3rd Qu.   Max.   NA's 
+------ --------- -------- ------- --------- ------ ------
+  0        0        0      0.469      1       1      12  
+---------------------------------------------------------
+
+"
+"0","pander::pander(summary(validBaselineTadpole$ABETA))"
+"1","
+--------------------------------------------------------
+ Min.   1st Qu.   Median   Mean   3rd Qu.   Max.   NA's 
+------ --------- -------- ------ --------- ------ ------
+ 203      596      854     1053    1396     3592   523  
+--------------------------------------------------------
+
+"
+"0","pander::pander(summary(validBaselineTadpole$TAU))"
+"1","
+--------------------------------------------------------
+ Min.   1st Qu.   Median   Mean   3rd Qu.   Max.   NA's 
+------ --------- -------- ------ --------- ------ ------
+ 81.5     194      258     287      350     852    527  
+--------------------------------------------------------
+
+"
+"0","pander::pander(summary(validBaselineTadpole$PTAU))"
+"1","
+--------------------------------------------------------
+ Min.   1st Qu.   Median   Mean   3rd Qu.   Max.   NA's 
+------ --------- -------- ------ --------- ------ ------
+ 8.21    17.4      24.2    27.6     34      103    528  
+--------------------------------------------------------
+
+"
+"0","validBaselineTadpole <- validBaselineTadpole[complete.cases(validBaselineTadpole),]"
+"0","ischar <- sapply(validBaselineTadpole,class) == ""character"""
+"0","validBaselineTadpole[,!ischar] <- sapply(validBaselineTadpole[,!ischar],as.numeric)"
+"0",""
+"0","pander::pander(summary(validBaselineTadpole$APOE4))"
+"1","
+--------------------------------------------------
+ Min.   1st Qu.   Median   Mean    3rd Qu.   Max. 
+------ --------- -------- ------- --------- ------
+  0        0        0      0.454      1       1   
+--------------------------------------------------
+
+"
+"0","pander::pander(summary(validBaselineTadpole$ABETA))"
+"1","
+-------------------------------------------------
+ Min.   1st Qu.   Median   Mean   3rd Qu.   Max. 
+------ --------- -------- ------ --------- ------
+ 203      623      874     1078    1427     3592 
+-------------------------------------------------
+
+"
+"0","pander::pander(summary(validBaselineTadpole$TAU))"
+"1","
+-------------------------------------------------
+ Min.   1st Qu.   Median   Mean   3rd Qu.   Max. 
+------ --------- -------- ------ --------- ------
+ 97.9     191      255     284      349     852  
+-------------------------------------------------
+
+"
+"0","pander::pander(summary(validBaselineTadpole$PTAU))"
+"1","
+-------------------------------------------------
+ Min.   1st Qu.   Median   Mean   3rd Qu.   Max. 
+------ --------- -------- ------ --------- ------
+ 8.21    17.1      23.8    27.3    33.9     103  
+-------------------------------------------------
+
+"
+"0","colnames(validBaselineTadpole) <- str_remove_all(colnames(validBaselineTadpole),""_UCSFFSX_11_02_15_UCSFFSX51_08_01_16"")"
+"0","colnames(validBaselineTadpole) <- str_replace_all(colnames(validBaselineTadpole),"" "",""_"")"
+"0","validBaselineTadpole$LONISID <- NULL"
+"0","validBaselineTadpole$IMAGEUID <- NULL"
+"0","validBaselineTadpole$LONIUID <- NULL"
+"0",""
+"0","diagnose <- as.character(validBaselineTadpole$DX)"
+"0","validBaselineTadpole$DX <- diagnose"
+"0","pander::pander(table(validBaselineTadpole$DX))"
+"1","
+----------------------------------------------------------------
+ Dementia   Dementia to MCI   MCI   MCI to NL   NL    NL to MCI 
+---------- ----------------- ----- ----------- ----- -----------
+   154             1          478       1       302       1     
+----------------------------------------------------------------
+
+"
+"0","validDX <- c(""NL"",""MCI"",""Dementia"")"
+"0",""
+"0","validBaselineTadpole <- validBaselineTadpole[validBaselineTadpole$DX %in% validDX,]"
+"0","validBaselineTadpole$DX <- as.factor(validBaselineTadpole$DX)"
+"0","pander::pander(table(validBaselineTadpole$DX))"
+"1","
+----------------------
+ Dementia   MCI   NL  
+---------- ----- -----
+   154      478   302 
+----------------------
+
+"

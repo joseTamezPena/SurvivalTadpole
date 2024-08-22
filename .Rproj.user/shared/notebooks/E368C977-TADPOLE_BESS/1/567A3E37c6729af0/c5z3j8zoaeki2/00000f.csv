@@ -1,0 +1,23 @@
+"0",""
+"0","load(""./TADPOLE_BSWIMS_Results.RData"")"
+"0",""
+"0","pander::pander(table(TADPOLE_Conv_TRAIN$status))"
+"1","
+----------
+  0    1  
+----- ----
+ 184   92 
+----------
+
+"
+"0","pander::pander(table(TADPOLE_Conv_TEST$status))"
+"1","
+----------
+  0    1  
+----- ----
+ 123   62 
+----------
+
+"
+"0","par(op)"
+"0",""
