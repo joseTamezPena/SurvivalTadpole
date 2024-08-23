@@ -1,8 +1,0 @@
-"0","ptestr <- exp(ptestl)"
-"0",""
-"0","predsurv <- cbind(TADPOLE_Conv_TEST$TimeToEvent,"
-"0","                  TADPOLE_Conv_TEST$status,"
-"0","                  ptestl,"
-"0","                  ptestr)"
-"0",""
-"0","prSurv <- predictionStats_survival(predsurv,""MCI to  AD Conversion"")"
