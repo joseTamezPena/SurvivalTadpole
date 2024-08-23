@@ -280,6 +280,8 @@ TrainFraction <- 0.60;
 MCIPrognosisIDs <- c(MCIconverters$PTID,MCI_No_converters$PTID)
 
 TADPOLECrossMRI <- validBaselineTadpole[MCIPrognosisIDs,]
+
+
 table(TADPOLECrossMRI$DX)
 TADPOLECrossMRI$DX <- NULL
 TADPOLECrossMRI$status <- 1*(rownames(TADPOLECrossMRI) %in% MCIconverters$PTID)
@@ -287,6 +289,8 @@ table(TADPOLECrossMRI$status)
 TADPOLECrossMRI$TimeToEvent <- numeric(nrow(TADPOLECrossMRI))
 TADPOLECrossMRI[MCIconverters$PTID,"TimeToEvent"] <- MCIconverters$TimeToEvent
 TADPOLECrossMRI[MCI_No_converters$PTID,"TimeToEvent"] <- MCI_No_converters$TimeToEvent
+TADPOLECrossMRI$TimeToEvent <- TADPOLECrossMRI$TimeToEvent/365.25
+
 
 TADPOLE_Cases <- subset(TADPOLECrossMRI,status==1)
 TADPOLE_Controls <- subset(TADPOLECrossMRI,status==0)
@@ -309,13 +313,15 @@ par(op)
 
 ```{r results = "asis", warning = FALSE, dpi=600, fig.height= 6.0, fig.width= 8.0}
 
+
+
 cvBSWiMSRaw <- randomCV(TADPOLECrossMRI,
                  Surv(TimeToEvent,status)~.,
                  fittingFunction= BSWiMS.model,
                  classSamplingType = "Ba",
                  trainFraction = 0.75,
                  repetitions = 50,
-                 loops=1,
+                 loops=20,
  )
 
 survmtest <- cvBSWiMSRaw$survMedianTest
@@ -326,9 +332,19 @@ pander::pander(prSurv$CIRisk)
 pander::pander(prSurv$CILp)
 pander::pander(prSurv$spearmanCI)
 
+par(op)
+prBin <- predictionStats_binary(cvBSWiMSRaw$survMedianTrain[,c(2,3)],"Train: MCI to  AD Conversion")
 prBin <- predictionStats_binary(survmtest[,c(2,3)],"BSWiMS: MCI to  AD Conversion")
 pander::pander(prBin$aucs)
 pander::pander(prBin$CM.analysis$tab)
+
+par(op)
+pgzero <- ppoisGzero(survmtest$LinearPredictorsMedian,1.0)
+rsdata <- cbind(survmtest$Outcome,pgzero,survmtest$Times)
+riskAnalysis <- RRPlot(rsdata)
+rsdatac <- CalibrationProbPoissonRisk(rsdata,1)
+par(op)
+riskAnalysis <- RRPlot(cbind(survmtest$Outcome,rsdatac$probGZero,survmtest$Times))
 
 
 ```

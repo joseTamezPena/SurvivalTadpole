@@ -12,7 +12,7 @@ output:
     toc: yes
     fig_caption: yes
 editor_options:
-  chunk_output_type: inline
+  chunk_output_type: console
 ---
 
 
@@ -74,6 +74,10 @@ prBin <- predictionStats_binary(survmtest[,c(2,3)],"BESS: MCI to  AD Conversion"
 pander::pander(prBin$aucs)
 pander::pander(prBin$CM.analysis$tab)
 
+pgzero <- ppoisGzero(survmtest$LinearPredictorsMedian,1.0)
+rsdata <- cbind(survmtest$Outcome,pgzero,survmtest$Times)
+rsdatac <- CalibrationProbPoissonRisk(rsdata,100)
+riskAnalysis <- RRPlot(cbind(survmtest$Outcome,rsdatac$probGZero,survmtest$Times))
 
 ```
 
