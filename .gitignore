@@ -19,3 +19,5 @@
 *.Rdata
 *.json
 *.html
+*.RData
+*.html
