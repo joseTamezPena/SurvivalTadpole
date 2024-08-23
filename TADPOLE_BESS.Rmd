@@ -1,5 +1,5 @@
 ---
-title: "TADPOLE_BSWiMS"
+title: "TADPOLE_BESS"
 author: "Jose Tamez"
 date: "`r Sys.Date()`"
 output: 
@@ -50,16 +50,96 @@ par(op)
 ```
 
 
-### Learning
+
+### Cross Validation BIC
 
 ```{r results = "asis", warning = FALSE, dpi=600, fig.height= 6.0, fig.width= 8.0}
-bConvmlLZO <- LASSO_1SE(Surv(TimeToEvent,status)~.,TADPOLE_Conv_TRAIN)
 
-pander::pander(bConvmlLZO$selectedfeatures)
+cvBESSRaw <- randomCV(TADPOLECrossMRI,
+                 Surv(TimeToEvent,status)~.,
+                 fittingFunction= BESS,
+                 trainSampleSets= cvBSWiMSRaw$trainSamplesSets,
+ )
 
-ptestl <- predict(bConvmlLZO,TADPOLE_Conv_TEST)
+survmtest <- cvBESSRaw$survMedianTest
+survmtest <- survmtest[complete.cases(survmtest),]
+prSurv <- predictionStats_survival(survmtest,"BESS: MCI to  AD Conversion")
+
+pander::pander(prSurv$CIRisk)
+pander::pander(prSurv$CILp)
+pander::pander(prSurv$spearmanCI)
+
+prBin <- predictionStats_binary(cvBESSRaw$survMedianTrain[,c(2,3)],"TRAIN: MCI to  AD Conversion")
+prBin <- predictionStats_binary(survmtest[,c(2,3)],"BESS: MCI to  AD Conversion")
+pander::pander(prBin$aucs)
+pander::pander(prBin$CM.analysis$tab)
+
+
+```
+
+
+
+### Cross Validation EBIC
+
+```{r results = "asis", warning = FALSE, dpi=600, fig.height= 6.0, fig.width= 8.0}
+
+cvBESSERaw <- randomCV(TADPOLECrossMRI,
+                 Surv(TimeToEvent,status)~.,
+                 fittingFunction= BESS_EBIC,
+                 trainSampleSets= cvBSWiMSRaw$trainSamplesSets,
+ )
+
+survmtest <- cvBESSERaw$survMedianTest
+survmtest <- survmtest[complete.cases(survmtest),]
+prSurv <- predictionStats_survival(survmtest,"BESS_EBIC: MCI to  AD Conversion")
+
+pander::pander(prSurv$CIRisk)
+pander::pander(prSurv$CILp)
+pander::pander(prSurv$spearmanCI)
+
+prBin <- predictionStats_binary(cvBESSERaw$survMedianTrain[,c(2,3)],"TRAIN: MCI to  AD Conversion")
+prBin <- predictionStats_binary(survmtest[,c(2,3)],"BESS_EBIC: MCI to  AD Conversion")
+pander::pander(prBin$aucs)
+pander::pander(prBin$CM.analysis$tab)
+
+
+```
+
+### Cross Validation GS
+
+```{r results = "asis", warning = FALSE, dpi=600, fig.height= 6.0, fig.width= 8.0}
+
+cvBESSGSERaw <- randomCV(TADPOLECrossMRI,
+                 Surv(TimeToEvent,status)~.,
+                 fittingFunction= BESS_GSECTION,
+                 trainSampleSets= cvBSWiMSRaw$trainSamplesSets,
+ )
+
+survmtest <- cvBESSGSERaw$survMedianTest
+survmtest <- survmtest[complete.cases(survmtest),]
+prSurv <- predictionStats_survival(survmtest,"BESS_GS: MCI to  AD Conversion")
+
+pander::pander(prSurv$CIRisk)
+pander::pander(prSurv$CILp)
+pander::pander(prSurv$spearmanCI)
+
+prBin <- predictionStats_binary(cvBESSGSERaw$survMedianTrain[,c(2,3)],"TRAIN: MCI to  AD Conversion")
+prBin <- predictionStats_binary(survmtest[,c(2,3)],"BESS_GS: MCI to  AD Conversion")
+pander::pander(prBin$aucs)
+pander::pander(prBin$CM.analysis$tab)
+
+
+```
+### Learning BIC
+
+```{r results = "asis", warning = FALSE, dpi=600, fig.height= 6.0, fig.width= 8.0}
+bConvmBess <- BESS(Surv(TimeToEvent,status)~.,TADPOLE_Conv_TRAIN)
+
+pander::pander(bConvmBess$selectedfeatures)
+
+ptestl <- predict(bConvmBess,TADPOLE_Conv_TEST)
 cval <- mean(ptestl)
-ptestl <- predict(bConvmlLZO,TADPOLE_Conv_TEST) - cval
+ptestl <- predict(bConvmBess,TADPOLE_Conv_TEST) - cval
 
 boxplot(ptestl~TADPOLE_Conv_TEST$status)
 ptestr <- exp(ptestl)
@@ -83,7 +163,70 @@ par(op)
 ```
 
 
+### Learning EBIC
 
+```{r results = "asis", warning = FALSE, dpi=600, fig.height= 6.0, fig.width= 8.0}
+bConvmBessE <- BESS_EBIC(Surv(TimeToEvent,status)~.,TADPOLE_Conv_TRAIN)
+
+pander::pander(bConvmBessE$selectedfeatures)
+
+ptestl <- predict(bConvmBessE,TADPOLE_Conv_TEST)
+cval <- mean(ptestl)
+ptestl <- predict(bConvmBessE,TADPOLE_Conv_TEST) - cval
+
+boxplot(ptestl~TADPOLE_Conv_TEST$status)
+ptestr <- exp(ptestl)
+
+predsurv <- cbind(TADPOLE_Conv_TEST$TimeToEvent,
+                  TADPOLE_Conv_TEST$status,
+                  ptestl,
+                  ptestr)
+
+prSurv <- predictionStats_survival(predsurv,"MCI to  AD Conversion")
+pander::pander(prSurv$CIRisk)
+pander::pander(prSurv$CILp)
+pander::pander(prSurv$spearmanCI)
+
+prBin <- predictionStats_binary(cbind(TADPOLE_Conv_TEST$status,ptestl),"MCI to  AD Conversion")
+pander::pander(prBin$aucs)
+pander::pander(prBin$CM.analysis$tab)
+
+par(op)
+
+```
+
+
+### Learning GS
+
+```{r results = "asis", warning = FALSE, dpi=600, fig.height= 6.0, fig.width= 8.0}
+bConvmBessGS <- BESS_GSECTION(Surv(TimeToEvent,status)~.,TADPOLE_Conv_TRAIN)
+
+pander::pander(bConvmBessGS$selectedfeatures)
+
+ptestl <- predict(bConvmBessGS,TADPOLE_Conv_TEST)
+cval <- mean(ptestl)
+ptestl <- predict(bConvmBessGS,TADPOLE_Conv_TEST) - cval
+
+boxplot(ptestl~TADPOLE_Conv_TEST$status)
+ptestr <- exp(ptestl)
+
+predsurv <- cbind(TADPOLE_Conv_TEST$TimeToEvent,
+                  TADPOLE_Conv_TEST$status,
+                  ptestl,
+                  ptestr)
+
+prSurv <- predictionStats_survival(predsurv,"MCI to  AD Conversion")
+pander::pander(prSurv$CIRisk)
+pander::pander(prSurv$CILp)
+pander::pander(prSurv$spearmanCI)
+
+prBin <- predictionStats_binary(cbind(TADPOLE_Conv_TEST$status,ptestl),"MCI to  AD Conversion")
+pander::pander(prBin$aucs)
+pander::pander(prBin$CM.analysis$tab)
+
+par(op)
+
+```
 
 
 ### Saving the enviroment

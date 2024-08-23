@@ -12,7 +12,7 @@ output:
     toc: yes
     fig_caption: yes
 editor_options:
-  chunk_output_type: inline
+  chunk_output_type: console
 ---
 
 
@@ -305,11 +305,40 @@ par(op)
 
 ```
 
+### Cross Validation
+
+```{r results = "asis", warning = FALSE, dpi=600, fig.height= 6.0, fig.width= 8.0}
+
+cvBSWiMSRaw <- randomCV(TADPOLECrossMRI,
+                 Surv(TimeToEvent,status)~.,
+                 fittingFunction= BSWiMS.model,
+                 classSamplingType = "Ba",
+                 trainFraction = 0.75,
+                 repetitions = 50,
+                 loops=1,
+ )
+
+survmtest <- cvBSWiMSRaw$survMedianTest
+survmtest <- survmtest[complete.cases(survmtest),]
+prSurv <- predictionStats_survival(survmtest,"BSWiMS: MCI to  AD Conversion")
+
+pander::pander(prSurv$CIRisk)
+pander::pander(prSurv$CILp)
+pander::pander(prSurv$spearmanCI)
+
+prBin <- predictionStats_binary(survmtest[,c(2,3)],"BSWiMS: MCI to  AD Conversion")
+pander::pander(prBin$aucs)
+pander::pander(prBin$CM.analysis$tab)
+
+
+```
+
+
 ### Learning
 
 ```{r results = "asis", warning = FALSE, dpi=600, fig.height= 6.0, fig.width= 8.0}
 
-bConvml <- BSWiMS.model(Surv(TimeToEvent,status)~1,TADPOLE_Conv_TRAIN,NumberofRepeats = 20)
+bConvml <- BSWiMS.model(Surv(TimeToEvent,status)~1,TADPOLE_Conv_TRAIN,NumberofRepeats = 5)
 pander::pander(bConvml$bagging$Jaccard.SM)
 
 fs <- bConvml$bagging$frequencyTable
@@ -331,12 +360,12 @@ perdsurv <- cbind(TADPOLE_Conv_TEST$TimeToEvent,
                   TADPOLE_Conv_TEST$status,
                   ptestl,
                   ptestr)
-prSurv <- predictionStats_survival(perdsurv,"MCI to  AD Conversion")
+prSurv <- predictionStats_survival(perdsurv,"BSWiMS: MCI to  AD Conversion")
 pander::pander(prSurv$CIRisk)
 pander::pander(prSurv$CILp)
 pander::pander(prSurv$spearmanCI)
 
-prBin <- predictionStats_binary(cbind(TADPOLE_Conv_TEST$status,ptestl),"MCI to  AD Conversion")
+prBin <- predictionStats_binary(cbind(TADPOLE_Conv_TEST$status,ptestl),"BSWiMS: MCI to  AD Conversion")
 pander::pander(prBin$aucs)
 pander::pander(prBin$CM.analysis$tab)
 

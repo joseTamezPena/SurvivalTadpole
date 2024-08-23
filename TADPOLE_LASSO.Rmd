@@ -1,5 +1,5 @@
 ---
-title: "TADPOLE_BSWiMS"
+title: "TADPOLE_GLMNET"
 author: "Jose Tamez"
 date: "`r Sys.Date()`"
 output: 
@@ -50,6 +50,32 @@ par(op)
 ```
 
 
+### Cross Validation
+
+```{r results = "asis", warning = FALSE, dpi=600, fig.height= 6.0, fig.width= 8.0}
+
+cvLASSORaw <- randomCV(TADPOLECrossMRI,
+                 Surv(TimeToEvent,status)~.,
+                 fittingFunction= LASSO_1SE,
+                 trainSampleSets= cvBSWiMSRaw$trainSamplesSets,
+ )
+
+survmtest <- cvLASSORaw$survMedianTest
+survmtest <- survmtest[complete.cases(survmtest),]
+prSurv <- predictionStats_survival(survmtest,"MCI to  AD Conversion")
+
+pander::pander(prSurv$CIRisk)
+pander::pander(prSurv$CILp)
+pander::pander(prSurv$spearmanCI)
+
+prBin <- predictionStats_binary(survmtest[,c(2,3)],"MCI to  AD Conversion")
+pander::pander(prBin$aucs)
+pander::pander(prBin$CM.analysis$tab)
+
+
+```
+
+
 ### Learning
 
 ```{r results = "asis", warning = FALSE, dpi=600, fig.height= 6.0, fig.width= 8.0}
@@ -84,6 +110,35 @@ par(op)
 
 
 
+### Learning RIDGE
+
+```{r results = "asis", warning = FALSE, dpi=600, fig.height= 6.0, fig.width= 8.0}
+bConvmlRIDGE <- GLMNET_RIDGE_1SE(Surv(TimeToEvent,status)~.,TADPOLE_Conv_TRAIN)
+
+ptestl <- predict(bConvmlRIDGE,TADPOLE_Conv_TEST)
+cval <- mean(ptestl)
+ptestl <- predict(bConvmlRIDGE,TADPOLE_Conv_TEST) - cval
+
+boxplot(ptestl~TADPOLE_Conv_TEST$status)
+ptestr <- exp(ptestl)
+
+predsurv <- cbind(TADPOLE_Conv_TEST$TimeToEvent,
+                  TADPOLE_Conv_TEST$status,
+                  ptestl,
+                  ptestr)
+
+prSurv <- predictionStats_survival(predsurv,"MCI to  AD Conversion")
+pander::pander(prSurv$CIRisk)
+pander::pander(prSurv$CILp)
+pander::pander(prSurv$spearmanCI)
+
+prBin <- predictionStats_binary(cbind(TADPOLE_Conv_TEST$status,ptestl),"MCI to  AD Conversion")
+pander::pander(prBin$aucs)
+pander::pander(prBin$CM.analysis$tab)
+
+par(op)
+
+```
 
 
 ### Saving the enviroment
