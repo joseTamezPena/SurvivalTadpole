@@ -1,7 +1,0 @@
-"0","TADPOLE_D1_D2 <- read.csv(""./Data/TADPOLE/TADPOLE_D1_D2.csv"")"
-"0","TADPOLE_D1_D2_Dict <- read.csv(""./Data/TADPOLE/TADPOLE_D1_D2_Dict.csv"")"
-"0","TADPOLE_D1_D2_Dict_LR <- as.data.frame(read_excel(""./Data/TADPOLE/TADPOLE_D1_D2_Dict_LR.xlsx"",sheet = ""LeftRightFeatures""))"
-"0",""
-"0",""
-"0","rownames(TADPOLE_D1_D2_Dict) <- TADPOLE_D1_D2_Dict$FLDNAME"
-"0",""
