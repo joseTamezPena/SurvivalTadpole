@@ -68,9 +68,21 @@ pander::pander(prSurv$CIRisk)
 pander::pander(prSurv$CILp)
 pander::pander(prSurv$spearmanCI)
 
+prBin <- predictionStats_binary(cvBESSRaw$survMedianTrain[,c(2,3)],"TRAIN: MCI to  AD Conversion")
 prBin <- predictionStats_binary(survmtest[,c(2,3)],"MCI to  AD Conversion")
 pander::pander(prBin$aucs)
 pander::pander(prBin$CM.analysis$tab)
+
+
+ho <- mean(survmtest$Outcome)
+timeInterval <- mean(survmtest$Times)
+pgzero <- ppoisGzero(survmtest$LinearPredictorsMedian,ho)
+rsdata <- cbind(survmtest$Outcome,pgzero,survmtest$Times)
+riskAnalysis <- RRPlot(rsdata,riskTimeInterval=timeInterval)
+rsdatac <- CalibrationProbPoissonRisk(rsdata,1)
+par(op)
+riskAnalysis <- RRPlot(cbind(survmtest$Outcome,rsdatac$probGZero,survmtest$Times),
+                       riskTimeInterval=rsdatac$timeInterval)
 
 
 ```

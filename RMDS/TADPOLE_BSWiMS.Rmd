@@ -40,9 +40,9 @@ pander::panderOptions('keep.trailing.zeros',TRUE)
 ## The data set
 
 ```{r}
-TADPOLE_D1_D2 <- read.csv("./Data/TADPOLE/TADPOLE_D1_D2.csv")
-TADPOLE_D1_D2_Dict <- read.csv("./Data/TADPOLE/TADPOLE_D1_D2_Dict.csv")
-TADPOLE_D1_D2_Dict_LR <- as.data.frame(read_excel("./Data/TADPOLE/TADPOLE_D1_D2_Dict_LR.xlsx",sheet = "LeftRightFeatures"))
+TADPOLE_D1_D2 <- read.csv("../Data/TADPOLE/TADPOLE_D1_D2.csv")
+TADPOLE_D1_D2_Dict <- read.csv("../Data/TADPOLE/TADPOLE_D1_D2_Dict.csv")
+TADPOLE_D1_D2_Dict_LR <- as.data.frame(read_excel("../Data/TADPOLE/TADPOLE_D1_D2_Dict_LR.xlsx",sheet = "LeftRightFeatures"))
 
 
 rownames(TADPOLE_D1_D2_Dict) <- TADPOLE_D1_D2_Dict$FLDNAME
@@ -321,30 +321,28 @@ cvBSWiMSRaw <- randomCV(TADPOLECrossMRI,
                  classSamplingType = "Ba",
                  trainFraction = 0.75,
                  repetitions = 50,
-                 loops=20,
+                 loops=0,
  )
 
+par(op)
 survmtest <- cvBSWiMSRaw$survMedianTest
 survmtest <- survmtest[complete.cases(survmtest),]
-prSurv <- predictionStats_survival(survmtest,"BSWiMS: MCI to  AD Conversion")
 
-pander::pander(prSurv$CIRisk)
-pander::pander(prSurv$CILp)
-pander::pander(prSurv$spearmanCI)
-
-par(op)
 prBin <- predictionStats_binary(cvBSWiMSRaw$survMedianTrain[,c(2,3)],"Train: MCI to  AD Conversion")
 prBin <- predictionStats_binary(survmtest[,c(2,3)],"BSWiMS: MCI to  AD Conversion")
 pander::pander(prBin$aucs)
 pander::pander(prBin$CM.analysis$tab)
 
 par(op)
-pgzero <- ppoisGzero(survmtest$LinearPredictorsMedian,1.0)
+ho <- mean(survmtest$Outcome)
+timeInterval <- mean(survmtest$Times)
+pgzero <- ppoisGzero(survmtest$LinearPredictorsMedian,ho)
 rsdata <- cbind(survmtest$Outcome,pgzero,survmtest$Times)
-riskAnalysis <- RRPlot(rsdata)
+riskAnalysis <- RRPlot(rsdata,riskTimeInterval=timeInterval)
 rsdatac <- CalibrationProbPoissonRisk(rsdata,1)
 par(op)
-riskAnalysis <- RRPlot(cbind(survmtest$Outcome,rsdatac$probGZero,survmtest$Times))
+riskAnalysis <- RRPlot(cbind(survmtest$Outcome,rsdatac$probGZero,survmtest$Times),
+                       riskTimeInterval=rsdatac$timeInterval)
 
 
 ```
@@ -354,7 +352,7 @@ riskAnalysis <- RRPlot(cbind(survmtest$Outcome,rsdatac$probGZero,survmtest$Times
 
 ```{r results = "asis", warning = FALSE, dpi=600, fig.height= 6.0, fig.width= 8.0}
 
-bConvml <- BSWiMS.model(Surv(TimeToEvent,status)~1,TADPOLE_Conv_TRAIN,NumberofRepeats = 5)
+bConvml <- BSWiMS.model(Surv(TimeToEvent,status)~1,TADPOLE_Conv_TRAIN,NumberofRepeats = 20)
 pander::pander(bConvml$bagging$Jaccard.SM)
 
 fs <- bConvml$bagging$frequencyTable
