@@ -40,9 +40,10 @@ pander::panderOptions('keep.trailing.zeros',TRUE)
 ## The data set
 
 ```{r}
-TADPOLE_D1_D2 <- read.csv("../Data/TADPOLE/TADPOLE_D1_D2.csv")
-TADPOLE_D1_D2_Dict <- read.csv("../Data/TADPOLE/TADPOLE_D1_D2_Dict.csv")
-TADPOLE_D1_D2_Dict_LR <- as.data.frame(read_excel("../Data/TADPOLE/TADPOLE_D1_D2_Dict_LR.xlsx",sheet = "LeftRightFeatures"))
+setwd("~")
+TADPOLE_D1_D2 <- read.csv("~/GitHub/SurvivalTadpole/Data/TADPOLE/TADPOLE_D1_D2.csv")
+TADPOLE_D1_D2_Dict <- read.csv("~/GitHub/SurvivalTadpole/Data/TADPOLE/TADPOLE_D1_D2_Dict.csv")
+TADPOLE_D1_D2_Dict_LR <- as.data.frame(read_excel("~/GitHub/SurvivalTadpole/Data/TADPOLE/TADPOLE_D1_D2_Dict_LR.xlsx",sheet = "LeftRightFeatures"))
 
 
 rownames(TADPOLE_D1_D2_Dict) <- TADPOLE_D1_D2_Dict$FLDNAME
@@ -321,8 +322,10 @@ cvBSWiMSRaw <- randomCV(TADPOLECrossMRI,
                  classSamplingType = "Ba",
                  trainFraction = 0.75,
                  repetitions = 50,
-                 loops=0,
+                 loops=1,
  )
+
+pander::pander((cvBSWiMSRaw$featureFrequency[cvBSWiMSRaw$featureFrequency>20]))
 
 par(op)
 survmtest <- cvBSWiMSRaw$survMedianTest
@@ -335,15 +338,20 @@ pander::pander(prBin$CM.analysis$tab)
 
 par(op)
 ho <- mean(survmtest$Outcome)
-timeInterval <- mean(survmtest$Times)
+timeInterval <- mean(survmtest[survmtest$Outcome==0,"Times"])
 pgzero <- ppoisGzero(survmtest$LinearPredictorsMedian,ho)
 rsdata <- cbind(survmtest$Outcome,pgzero,survmtest$Times)
-riskAnalysis <- RRPlot(rsdata,riskTimeInterval=timeInterval)
-rsdatac <- CalibrationProbPoissonRisk(rsdata,1)
-par(op)
-riskAnalysis <- RRPlot(cbind(survmtest$Outcome,rsdatac$probGZero,survmtest$Times),
-                       riskTimeInterval=rsdatac$timeInterval)
+riskAnalysis <- RRPlot(rsdata,riskTimeInterval=timeInterval,title="BSWiMS")
 
+pander::pander(riskAnalysis$keyPoints)
+
+pander::pander(riskAnalysis$c.index)
+
+pander::pander(riskAnalysis$ROCAnalysis$aucs)
+
+pander::pander(riskAnalysis$ROCAnalysis$ClassMetrics)
+
+pander::pander(riskAnalysis$ROCAnalysis$CM.analysis$tab)
 
 ```
 
