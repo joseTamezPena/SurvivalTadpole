@@ -62,28 +62,28 @@ cvLASSORaw <- randomCV(TADPOLECrossMRI,
 
 survmtest <- cvLASSORaw$survMedianTest
 survmtest <- survmtest[complete.cases(survmtest),]
-prSurv <- predictionStats_survival(survmtest,"MCI to  AD Conversion")
 
-pander::pander(prSurv$CIRisk)
-pander::pander(prSurv$CILp)
-pander::pander(prSurv$spearmanCI)
-
-prBin <- predictionStats_binary(cvBESSRaw$survMedianTrain[,c(2,3)],"TRAIN: MCI to  AD Conversion")
-prBin <- predictionStats_binary(survmtest[,c(2,3)],"MCI to  AD Conversion")
+prBin <- predictionStats_binary(cvLASSORaw$survMedianTrain[,c(2,3)],"TRAIN: MCI to  AD Conversion")
+prBin <- predictionStats_binary(survmtest[,c(2,3)],"LASSO: MCI to  AD Conversion")
 pander::pander(prBin$aucs)
 pander::pander(prBin$CM.analysis$tab)
 
-
+par(op)
 ho <- mean(survmtest$Outcome)
-timeInterval <- mean(survmtest$Times)
+timeInterval <- mean(survmtest[survmtest$Outcome==0,"Times"])
 pgzero <- ppoisGzero(survmtest$LinearPredictorsMedian,ho)
 rsdata <- cbind(survmtest$Outcome,pgzero,survmtest$Times)
-riskAnalysis <- RRPlot(rsdata,riskTimeInterval=timeInterval)
-rsdatac <- CalibrationProbPoissonRisk(rsdata,1)
-par(op)
-riskAnalysis <- RRPlot(cbind(survmtest$Outcome,rsdatac$probGZero,survmtest$Times),
-                       riskTimeInterval=rsdatac$timeInterval)
+riskAnalysis <- RRPlot(rsdata,riskTimeInterval=timeInterval,title="LASSO")
 
+pander::pander(riskAnalysis$keyPoints)
+
+pander::pander(riskAnalysis$c.index)
+
+pander::pander(riskAnalysis$ROCAnalysis$aucs)
+
+pander::pander(riskAnalysis$ROCAnalysis$ClassMetrics)
+
+pander::pander(riskAnalysis$ROCAnalysis$CM.analysis$tab)
 
 ```
 
