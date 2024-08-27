@@ -61,28 +61,29 @@ cvBESSRaw <- randomCV(TADPOLECrossMRI,
                  trainSampleSets= cvBSWiMSRaw$trainSamplesSets,
  )
 
-survmtest <- cvBESSRaw$survMedianTest
-survmtest <- survmtest[complete.cases(survmtest),]
-prSurv <- predictionStats_survival(survmtest,"BESS: MCI to  AD Conversion")
-
-pander::pander(prSurv$CIRisk)
-pander::pander(prSurv$CILp)
-pander::pander(prSurv$spearmanCI)
+pander::pander(cbind(cvBESSRaw$featureFrequency[cvBESSRaw$featureFrequency>20]))
 
 prBin <- predictionStats_binary(cvBESSRaw$survMedianTrain[,c(2,3)],"TRAIN: MCI to  AD Conversion")
-prBin <- predictionStats_binary(survmtest[,c(2,3)],"BESS: MCI to  AD Conversion")
+
+survmtest <- cvBESSRaw$survMedianTest
+survmtest <- survmtest[complete.cases(survmtest),]
+
+prBin <- predictionStats_binary(survmtest[,c(2,3)],"BESS:BIC: MCI to  AD Conversion")
 pander::pander(prBin$aucs)
 pander::pander(prBin$CM.analysis$tab)
 
+par(op)
 ho <- mean(survmtest$Outcome)
-timeInterval <- mean(survmtest$Times)
+timeInterval <- mean(survmtest[survmtest$Outcome==0,"Times"])
 pgzero <- ppoisGzero(survmtest$LinearPredictorsMedian,ho)
 rsdata <- cbind(survmtest$Outcome,pgzero,survmtest$Times)
-riskAnalysis <- RRPlot(rsdata,riskTimeInterval=timeInterval)
-rsdatac <- CalibrationProbPoissonRisk(rsdata,1)
-par(op)
-riskAnalysis <- RRPlot(cbind(survmtest$Outcome,rsdatac$probGZero,survmtest$Times),
-                       riskTimeInterval=rsdatac$timeInterval)
+riskAnalysis <- RRPlot(rsdata,riskTimeInterval=timeInterval,title="BESS:BIC")
+
+pander::pander(riskAnalysis$c.index)
+pander::pander(riskAnalysis$ROCAnalysis$aucs)
+pander::pander(riskAnalysis$cenAUC)
+pander::pander(riskAnalysis$ROCAnalysis$ClassMetrics)
+pander::pander(riskAnalysis$surdif)
 
 ```
 
@@ -97,19 +98,29 @@ cvBESSERaw <- randomCV(TADPOLECrossMRI,
                  fittingFunction= BESS_EBIC,
                  trainSampleSets= cvBSWiMSRaw$trainSamplesSets,
  )
+pander::pander(cbind(cvBESSERaw$featureFrequency[cvBESSERaw$featureFrequency>20]))
+
+prBin <- predictionStats_binary(cvBESSERaw$survMedianTrain[,c(2,3)],"TRAIN: MCI to  AD Conversion")
 
 survmtest <- cvBESSERaw$survMedianTest
 survmtest <- survmtest[complete.cases(survmtest),]
-prSurv <- predictionStats_survival(survmtest,"BESS_EBIC: MCI to  AD Conversion")
 
-pander::pander(prSurv$CIRisk)
-pander::pander(prSurv$CILp)
-pander::pander(prSurv$spearmanCI)
-
-prBin <- predictionStats_binary(cvBESSERaw$survMedianTrain[,c(2,3)],"TRAIN: MCI to  AD Conversion")
-prBin <- predictionStats_binary(survmtest[,c(2,3)],"BESS_EBIC: MCI to  AD Conversion")
+prBin <- predictionStats_binary(survmtest[,c(2,3)],"BESS:EBIC: MCI to  AD Conversion")
 pander::pander(prBin$aucs)
 pander::pander(prBin$CM.analysis$tab)
+
+par(op)
+ho <- mean(survmtest$Outcome)
+timeInterval <- mean(survmtest[survmtest$Outcome==0,"Times"])
+pgzero <- ppoisGzero(survmtest$LinearPredictorsMedian,ho)
+rsdata <- cbind(survmtest$Outcome,pgzero,survmtest$Times)
+riskAnalysis <- RRPlot(rsdata,riskTimeInterval=timeInterval,title="BESS:EBIC")
+
+pander::pander(riskAnalysis$c.index)
+pander::pander(riskAnalysis$ROCAnalysis$aucs)
+pander::pander(riskAnalysis$cenAUC)
+pander::pander(riskAnalysis$ROCAnalysis$ClassMetrics)
+pander::pander(riskAnalysis$surdif)
 
 
 ```
@@ -123,22 +134,33 @@ cvBESSGSERaw <- randomCV(TADPOLECrossMRI,
                  fittingFunction= BESS_GSECTION,
                  trainSampleSets= cvBSWiMSRaw$trainSamplesSets,
  )
+pander::pander(cbind(cvBESSGSERaw$featureFrequency[cvBESSGSERaw$featureFrequency>20]))
+prBin <- predictionStats_binary(cvBESSGSERaw$survMedianTrain[,c(2,3)],"TRAIN: MCI to  AD Conversion")
 
 survmtest <- cvBESSGSERaw$survMedianTest
 survmtest <- survmtest[complete.cases(survmtest),]
-prSurv <- predictionStats_survival(survmtest,"BESS_GS: MCI to  AD Conversion")
 
-pander::pander(prSurv$CIRisk)
-pander::pander(prSurv$CILp)
-pander::pander(prSurv$spearmanCI)
-
-prBin <- predictionStats_binary(cvBESSGSERaw$survMedianTrain[,c(2,3)],"TRAIN: MCI to  AD Conversion")
-prBin <- predictionStats_binary(survmtest[,c(2,3)],"BESS_GS: MCI to  AD Conversion")
+prBin <- predictionStats_binary(survmtest[,c(2,3)],"BESS:GS: MCI to  AD Conversion")
 pander::pander(prBin$aucs)
 pander::pander(prBin$CM.analysis$tab)
 
+par(op)
+ho <- mean(survmtest$Outcome)
+timeInterval <- mean(survmtest[survmtest$Outcome==0,"Times"])
+pgzero <- ppoisGzero(survmtest$LinearPredictorsMedian,ho)
+rsdata <- cbind(survmtest$Outcome,pgzero,survmtest$Times)
+riskAnalysis <- RRPlot(rsdata,riskTimeInterval=timeInterval,title="BESS:GS")
+
+pander::pander(riskAnalysis$c.index)
+pander::pander(riskAnalysis$ROCAnalysis$aucs)
+pander::pander(riskAnalysis$cenAUC)
+pander::pander(riskAnalysis$ROCAnalysis$ClassMetrics)
+pander::pander(riskAnalysis$surdif)
+
+
 
 ```
+
 ### Learning BIC
 
 ```{r results = "asis", warning = FALSE, dpi=600, fig.height= 6.0, fig.width= 8.0}

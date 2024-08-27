@@ -12,7 +12,7 @@ output:
     toc: yes
     fig_caption: yes
 editor_options:
-  chunk_output_type: inline
+  chunk_output_type: console
 ---
 
 
@@ -59,11 +59,13 @@ cvLASSORaw <- randomCV(TADPOLECrossMRI,
                  fittingFunction= LASSO_1SE,
                  trainSampleSets= cvBSWiMSRaw$trainSamplesSets,
  )
+pander::pander(cbind(cvLASSORaw$featureFrequency[cvLASSORaw$featureFrequency>20]))
+
+prBin <- predictionStats_binary(cvLASSORaw$survMedianTrain[,c(2,3)],"TRAIN: MCI to  AD Conversion")
 
 survmtest <- cvLASSORaw$survMedianTest
 survmtest <- survmtest[complete.cases(survmtest),]
 
-prBin <- predictionStats_binary(cvLASSORaw$survMedianTrain[,c(2,3)],"TRAIN: MCI to  AD Conversion")
 prBin <- predictionStats_binary(survmtest[,c(2,3)],"LASSO: MCI to  AD Conversion")
 pander::pander(prBin$aucs)
 pander::pander(prBin$CM.analysis$tab)
@@ -75,15 +77,45 @@ pgzero <- ppoisGzero(survmtest$LinearPredictorsMedian,ho)
 rsdata <- cbind(survmtest$Outcome,pgzero,survmtest$Times)
 riskAnalysis <- RRPlot(rsdata,riskTimeInterval=timeInterval,title="LASSO")
 
-pander::pander(riskAnalysis$keyPoints)
+pander::pander(riskAnalysis$c.index)
+pander::pander(riskAnalysis$ROCAnalysis$aucs)
+pander::pander(riskAnalysis$cenAUC)
+pander::pander(riskAnalysis$ROCAnalysis$ClassMetrics)
+pander::pander(riskAnalysis$surdif)
+
+```
+
+### Cross Validation RIDGE
+
+```{r results = "asis", warning = FALSE, dpi=600, fig.height= 6.0, fig.width= 8.0}
+
+cvRIDGERaw <- randomCV(TADPOLECrossMRI,
+                 Surv(TimeToEvent,status)~.,
+                 fittingFunction= GLMNET_RIDGE_1SE,
+                 trainSampleSets= cvBSWiMSRaw$trainSamplesSets,
+ )
+
+prBin <- predictionStats_binary(cvRIDGERaw$survMedianTrain[,c(2,3)],"TRAIN: MCI to  AD Conversion")
+
+survmtest <- cvRIDGERaw$survMedianTest
+survmtest <- survmtest[complete.cases(survmtest),]
+
+prBin <- predictionStats_binary(survmtest[,c(2,3)],"RIDGE: MCI to  AD Conversion")
+pander::pander(prBin$aucs)
+pander::pander(prBin$CM.analysis$tab)
+
+par(op)
+ho <- mean(survmtest$Outcome)
+timeInterval <- mean(survmtest[survmtest$Outcome==0,"Times"])
+pgzero <- ppoisGzero(survmtest$LinearPredictorsMedian,ho)
+rsdata <- cbind(survmtest$Outcome,pgzero,survmtest$Times)
+riskAnalysis <- RRPlot(rsdata,riskTimeInterval=timeInterval,title="RIDGE")
 
 pander::pander(riskAnalysis$c.index)
-
 pander::pander(riskAnalysis$ROCAnalysis$aucs)
-
+pander::pander(riskAnalysis$cenAUC)
 pander::pander(riskAnalysis$ROCAnalysis$ClassMetrics)
-
-pander::pander(riskAnalysis$ROCAnalysis$CM.analysis$tab)
+pander::pander(riskAnalysis$surdif)
 
 ```
 
