@@ -72,10 +72,11 @@ FreeSurfersetCross <- str_detect(colnames(TADPOLE_D1_D2),"UCSFFSX")
 
 # The subset of baseline measurements
 baselineTadpole <- subset(TADPOLE_D1_D2,VISCODE=="bl")
-table(baselineTadpole$DX)
+pander::pander(table(baselineTadpole$DX))
 
 rownames(baselineTadpole) <- baselineTadpole$PTID
 
+pander::pander(table(baselineTadpole$APOE4))
 
 validBaselineTadpole <- cbind(DX=baselineTadpole$DX,
                                  AGE=baselineTadpole$AGE,
@@ -109,6 +110,7 @@ pander::pander(summary(validBaselineTadpole$PTAU))
 fraction <- sum(is.na(validBaselineTadpole$PTAU)/nrow(validBaselineTadpole))
 pander::pander(c(col=ncol(validBaselineTadpole),row=nrow(validBaselineTadpole)))
 
+pander::pander(table(validBaselineTadpole$DX))
 
 LeftFields <- TADPOLE_D1_D2_Dict_LR$LFN
 names(LeftFields) <- LeftFields
@@ -118,20 +120,20 @@ names(RightFields) <- RightFields
 RightFields <- RightFields[RightFields %in% colnames(validBaselineTadpole)]
 
 ## Normalize to ICV
-validBaselineTadpole$Ventricles=validBaselineTadpole$Ventricles/validBaselineTadpole$ICV
-validBaselineTadpole$Hippocampus=validBaselineTadpole$Hippocampus/validBaselineTadpole$ICV
-validBaselineTadpole$WholeBrain=validBaselineTadpole$WholeBrain/validBaselineTadpole$ICV
-validBaselineTadpole$Entorhinal=validBaselineTadpole$Entorhinal/validBaselineTadpole$ICV
-validBaselineTadpole$Fusiform=validBaselineTadpole$Fusiform/validBaselineTadpole$ICV
-validBaselineTadpole$MidTemp=validBaselineTadpole$MidTemp/validBaselineTadpole$ICV
+validBaselineTadpole$Ventricles=1000.0*validBaselineTadpole$Ventricles/validBaselineTadpole$ICV
+validBaselineTadpole$Hippocampus=1000.0*validBaselineTadpole$Hippocampus/validBaselineTadpole$ICV
+validBaselineTadpole$WholeBrain=1000.0*validBaselineTadpole$WholeBrain/validBaselineTadpole$ICV
+validBaselineTadpole$Entorhinal=1000.0*validBaselineTadpole$Entorhinal/validBaselineTadpole$ICV
+validBaselineTadpole$Fusiform=1000.0*validBaselineTadpole$Fusiform/validBaselineTadpole$ICV
+validBaselineTadpole$MidTemp=1000.0*validBaselineTadpole$MidTemp/validBaselineTadpole$ICV
 
-leftData <- validBaselineTadpole[,LeftFields]/validBaselineTadpole$ICV
-RightData <- validBaselineTadpole[,RightFields]/validBaselineTadpole$ICV
+leftData <- 1000.0*validBaselineTadpole[,LeftFields]/validBaselineTadpole$ICV
+RightData <- 1000.0*validBaselineTadpole[,RightFields]/validBaselineTadpole$ICV
 
 ## get mean and relative difference 
 meanLeftRight <- (leftData + RightData)/2
 difLeftRight <- abs(leftData - RightData)
-reldifLeftRight <- difLeftRight/meanLeftRight
+reldifLeftRight <- 100.0*difLeftRight/meanLeftRight
 colnames(meanLeftRight) <- paste("M",colnames(meanLeftRight),sep="_")
 colnames(difLeftRight) <- paste("D",colnames(difLeftRight),sep="_")
 colnames(reldifLeftRight) <- paste("RD",colnames(reldifLeftRight),sep="_")
@@ -152,6 +154,9 @@ validBaselineTadpole <- validBaselineTadpole[,!ischar]
 ## Place back diagnose
 validBaselineTadpole$DX <- diagnose
 
+pander::pander(table(validBaselineTadpole$DX))
+
+
 pander::pander(summary(validBaselineTadpole$APOE4))
 pander::pander(summary(validBaselineTadpole$ABETA))
 pander::pander(summary(validBaselineTadpole$TAU))
@@ -159,12 +164,19 @@ pander::pander(summary(validBaselineTadpole$PTAU))
 
 pander::pander(c(col=ncol(validBaselineTadpole),row=nrow(validBaselineTadpole)))
 
+#subMCI <- subset(validBaselineTadpole,DX=="MCI")
+#apply(is.na(subMCI),2,sum)
 
-
+validBaselineTadpole$Hippocampus <- NULL
+validBaselineTadpole$Entorhinal <- NULL
+validBaselineTadpole$Fusiform <- NULL
+validBaselineTadpole$MidTemp <- NULL
 
 validBaselineTadpole <- validBaselineTadpole[complete.cases(validBaselineTadpole),]
 ischar <- sapply(validBaselineTadpole,class) == "character"
 validBaselineTadpole[,!ischar] <- sapply(validBaselineTadpole[,!ischar],as.numeric)
+
+pander::pander(table(validBaselineTadpole$DX))
 
 pander::pander(summary(validBaselineTadpole$APOE4))
 pander::pander(summary(validBaselineTadpole$ABETA))
@@ -293,7 +305,7 @@ MCIPrognosisIDs <- c(MCIconverters$PTID,MCI_No_converters$PTID)
 TADPOLECrossMRI <- validBaselineTadpole[MCIPrognosisIDs,]
 
 
-table(TADPOLECrossMRI$DX)
+pander::pander(table(TADPOLECrossMRI$DX))
 TADPOLECrossMRI$DX <- NULL
 TADPOLECrossMRI$status <- 1*(rownames(TADPOLECrossMRI) %in% MCIconverters$PTID)
 table(TADPOLECrossMRI$status)
@@ -326,6 +338,14 @@ par(op)
 ### Number of subjects
 ```{r results = "asis"}
 
+pander::pander(table(is.na(as.numeric(baselineTadpole$ABETA_UPENNBIOMK9_04_19_17)),baselineTadpole$DX))
+pander::pander(table(is.na(as.numeric(baselineTadpole$APOE4)),baselineTadpole$DX))
+pander::pander(table(is.na(as.numeric(baselineTadpole$TAU_UPENNBIOMK9_04_19_17)),baselineTadpole$DX))
+pander::pander(table(is.na(as.numeric(baselineTadpole$PTAU_UPENNBIOMK9_04_19_17)),baselineTadpole$DX))
+pander::pander(table(is.na(as.numeric(baselineTadpole$PTAU_UPENNBIOMK9_04_19_17)),
+                     is.na(as.numeric(baselineTadpole$ABETA_UPENNBIOMK9_04_19_17))))
+
+pander::pander(table(baselineTadpole$DX_bl,baselineTadpole$DX))
 pander::pander(c(col=ncol(baselineTadpole),row=nrow(baselineTadpole)))
 pander::pander(c(col=ncol(validBaselineTadpole),row=nrow(validBaselineTadpole)))
 pander::pander(c(col=ncol(TADPOLECrossMRI),row=nrow(TADPOLECrossMRI)))
@@ -337,16 +357,16 @@ pander::pander(c(col=ncol(TADPOLECrossMRI),row=nrow(TADPOLECrossMRI)))
 ```{r results = "asis", warning = FALSE}
 varlist <- colnames(TADPOLECrossMRI);
 varlist <- varlist[varlist != "status"]
-varlist <- varlist[1:21]
+varlist <- varlist[1:17]
 varlist <- cbind(varlist,varlist)
 uvar <- uniRankVar(variableList=varlist,
-                   formula="Surv(TimeToEvent,status)~1",
+                   formula="Surv(TimeToEvent,status)~1+AGE",
                    Outcome="status",
                    data=TADPOLECrossMRI,
                    timeOutcome="TimeToEvent")
 
 colnames(uvar$orderframe)
-uninames <- c("caseMean","caseStd","controlMean","controlStd","Beta","ZGLM")   
+uninames <- c("caseMean","caseStd","controlMean","controlStd","Beta","ZGLM","t.Rawvalue")   
 
 
 pander::pander(uvar$orderframe[,uninames])
@@ -475,7 +495,7 @@ survmtest <- cvBSWiMSFluid$survMedianTest
 survmtest <- survmtest[complete.cases(survmtest),]
 
 prBin <- predictionStats_binary(cvBSWiMSFluid$survMedianTrain[,c(2,3)],"Train: MCI to  AD Conversion")
-prBin <- predictionStats_binary(survmtest[,c(2,3)],"Fluid + Apoe: MCI to  AD Conversion")
+prBin <- predictionStats_binary(survmtest[,c(2,3)],"CSF + Apoe: MCI to  AD Conversion")
 allBinFluid <- prBin
 pander::pander(prBin$aucs)
 pander::pander(prBin$CM.analysis$tab)
@@ -485,7 +505,7 @@ ho <- mean(survmtest$Outcome)
 timeInterval <- mean(survmtest[survmtest$Outcome==0,"Times"])
 pgzero <- ppoisGzero(survmtest$LinearPredictorsMedian,ho)
 rsdata <- cbind(survmtest$Outcome,pgzero,survmtest$Times)
-riskAnalysis <- RRPlot(rsdata,riskTimeInterval=timeInterval,title="Fluid + Apoe")
+riskAnalysis <- RRPlot(rsdata,riskTimeInterval=timeInterval,title="CSF + Apoe")
 
 
 pander::pander(riskAnalysis$keyPoints)
@@ -500,14 +520,14 @@ pander::pander(riskAnalysis$surdif)
 ```
 
 
-### Cross Validation MRI Features
+### Cross Validation MRI + APOE4 Features
 
 ```{r results = "asis", warning = FALSE, dpi=600, fig.height= 6.0, fig.width= 8.0}
 
 allNames <- colnames(TADPOLECrossMRI)
 MRInames <- allNames[!(allNames %in% OnlyFluid | allNames %in% OnlyCogTest)]
 
-cvBSWiMSMRI <- randomCV(TADPOLECrossMRI[,MRInames],
+cvBSWiMSMRI <- randomCV(TADPOLECrossMRI[,c(MRInames,"APOE4")],
                  Surv(TimeToEvent,status)~.,
                  fittingFunction= BSWiMS.model,
                 trainSampleSets= cvBSWiMSRaw$trainSamplesSets,
@@ -521,7 +541,7 @@ survmtest <- cvBSWiMSMRI$survMedianTest
 survmtest <- survmtest[complete.cases(survmtest),]
 
 prBin <- predictionStats_binary(cvBSWiMSMRI$survMedianTrain[,c(2,3)],"Train: MCI to  AD Conversion")
-prBin <- predictionStats_binary(survmtest[,c(2,3)],"MRI: MCI to  AD Conversion")
+prBin <- predictionStats_binary(survmtest[,c(2,3)],"MRI + APOE4: MCI to  AD Conversion")
 allBinMRI <- prBin
 
 pander::pander(prBin$aucs)
@@ -532,7 +552,7 @@ ho <- mean(survmtest$Outcome)
 timeInterval <- mean(survmtest[survmtest$Outcome==0,"Times"])
 pgzero <- ppoisGzero(survmtest$LinearPredictorsMedian,ho)
 rsdata <- cbind(survmtest$Outcome,pgzero,survmtest$Times)
-riskAnalysis <- RRPlot(rsdata,riskTimeInterval=timeInterval,title="MRI")
+riskAnalysis <- RRPlot(rsdata,riskTimeInterval=timeInterval,title="MRI + APOE4")
 
 
 pander::pander(riskAnalysis$keyPoints)
@@ -615,7 +635,7 @@ pander::pander(roc.test(allBinMRI$ROC.analysis$roc.predictor,allBinFluid$ROC.ana
 
 ```{r results = "asis", warning = FALSE, dpi=600, fig.height= 6.0, fig.width= 8.0}
 
-bConvml <- BSWiMS.model(Surv(TimeToEvent,status)~1,TADPOLE_Conv_TRAIN,NumberofRepeats = 20)
+bConvml <- BSWiMS.model(Surv(TimeToEvent,status)~1,TADPOLE_Conv_TRAIN,loops=20,NumberofRepeats = 20)
 pander::pander(bConvml$bagging$Jaccard.SM)
 
 fs <- bConvml$bagging$frequencyTable
@@ -651,8 +671,8 @@ pander::pander(prBin$CM.analysis$tab)
 
 
 par(op)
-ho <- mean(perdsurv$Outcome)
-timeInterval <- mean(perdsurv[perdsurv$Outcome==0,"Times"])
+ho <- mean(TADPOLE_Conv_TRAIN$status)
+timeInterval <- mean(TADPOLE_Conv_TRAIN[TADPOLE_Conv_TRAIN$status==0,"TimeToEvent"])
 pgzero <- ppoisGzero(perdsurv$LinearPredictors,ho)
 rsdata <- cbind(perdsurv$Outcome,pgzero,perdsurv$Times)
 riskAnalysis <- RRPlot(rsdata,riskTimeInterval=timeInterval,title="Test")

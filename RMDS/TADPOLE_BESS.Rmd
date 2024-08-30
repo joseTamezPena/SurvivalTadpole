@@ -262,7 +262,7 @@ par(op)
 
 ### Saving the enviroment
 ```{r}
-save.image("./TADPOLE_LASSO_Results.RData")
+save.image("./TADPOLE_BESS_Results.RData")
 
 
 ```
