@@ -671,10 +671,17 @@ pander::pander(bConvml$bagging$Jaccard.SM)
 fs <- bConvml$bagging$frequencyTable
 barplot(fs[order(-fs)],las=2,main="Selected Features",cex.names = 0.5)
 sm <- summary(bConvml)
-sm$coefficients$lower
-sm$coefficients$upper
-bConvml$bagging$bagged.model$baggingAnalysis$avgLogPvalues
-
+summary(TADPOLE_Conv_TRAINNorm$M_ST39CV)
+pander::pander(bConvml$formula.list)
+pander::pander(bConvml$bagging$predfit$coef)
+cnames <- names(bConvml$bagging$bagged.model$coefficients)
+pander::pander(cbind(
+                      bConvml$bagging$bagged.model$coefficients,
+                      bConvml$bagging$bagged.model$baggingAnalysis$coefficients[cnames],
+                      bConvml$bagging$bagged.model$baggingAnalysis$wts[cnames],
+                      bConvml$bagging$bagged.model$baggingAnalysis$avgLogPvalues[cnames],
+                      bConvml$bagging$bagged.model$baggingAnalysis$RelativeFrequency[cnames])
+)
 pander::pander(sm$coefficients)
 pander::pander(bConvml$univariate[bConvml$selectedfeatures,])
 
@@ -733,9 +740,10 @@ pander::pander(riskAnalysis$surdif)
 
 ```{r results = "asis", warning = FALSE, dpi=600, fig.height= 6.0, fig.width= 8.0}
 cmax <- apply(bConvml$bagging$formulaNetwork,2,max)
+mcoef <- bConvml$bagging$bagged.model$coefficients
 cnames <- names(cmax[cmax>=0.025])
+#cnames <- cnames[abs(mcoef[cnames])>1.0e-10]
 cmax <- cmax[cnames]
-
 adma <- bConvml$bagging$formulaNetwork[cnames,cnames]
 
 adma[adma<0.15] <- 0;
