@@ -145,11 +145,14 @@ validBaselineTadpole <- cbind(validBaselineTadpole,meanLeftRight,reldifLeftRight
 
 ## Remove columns with too many NA more than %35 of NA
 nacount <- apply(is.na(validBaselineTadpole),2,sum)/nrow(validBaselineTadpole) <= fraction
+sum(nacount)
+length(nacount)
 diagnose <- validBaselineTadpole$DX
 pander::pander(table(diagnose))
 validBaselineTadpole <- validBaselineTadpole[,nacount]
 ## Remove character columns
 ischar <- sapply(validBaselineTadpole,class) == "character"
+sum(ischar)
 validBaselineTadpole <- validBaselineTadpole[,!ischar]
 ## Place back diagnose
 validBaselineTadpole$DX <- diagnose
@@ -629,24 +632,57 @@ pander::pander(roc.test(allBinMRICog$ROC.analysis$roc.predictor,allBinFluid$ROC.
 pander::pander(roc.test(allBinCog$ROC.analysis$roc.predictor,allBinMRI$ROC.analysis$roc.predictor))
 pander::pander(roc.test(allBinMRI$ROC.analysis$roc.predictor,allBinFluid$ROC.analysis$roc.predictor))
 
+
+```
+
+```{r results = "asis", warning = FALSE, dpi=600, fig.height= 6.0, fig.width= 8.0}
+survmtest <- cvBSWiMSRaw$survMedianTest
+survmtest <- survmtest[complete.cases(survmtest),]
+prBin <- predictionStats_binary(survmtest[,c(2,3)],"MCI to  AD Conversion")
+par(new=TRUE)
+plot(allBinMRICog$ROC.analysis$roc.predictor,col="red")
+par(new=TRUE)
+plot(allBinCog$ROC.analysis$roc.predictor,col="blue")
+par(new=TRUE)
+plot(allBinMRI$ROC.analysis$roc.predictor,col="green")
+par(new=TRUE)
+plot(allBinFluid$ROC.analysis$roc.predictor,col="cyan")
+legend("bottomright",
+       legend=c("All","MRI+COG","COG","MRI","CSF"),
+       lty=1,
+       col=c("black","red","blue","green","cyan"))
+
 ```
 
 ### Learning
 
 ```{r results = "asis", warning = FALSE, dpi=600, fig.height= 6.0, fig.width= 8.0}
 
-bConvml <- BSWiMS.model(Surv(TimeToEvent,status)~1,TADPOLE_Conv_TRAIN,loops=20,NumberofRepeats = 20)
+TADPOLE_Conv_TRAINNorm <- FRESAScale(TADPOLE_Conv_TRAIN)
+TADPOLE_Conv_TRAINNorm <- TADPOLE_Conv_TRAINNorm$scaledData
+TADPOLE_Conv_TRAINNorm$TimeToEvent <- TADPOLE_Conv_TRAIN$TimeToEvent
+TADPOLE_Conv_TESTNorm <- FRESAScale(TADPOLE_Conv_TEST,TADPOLE_Conv_TRAIN)$scaledData
+TADPOLE_Conv_TESTNorm$TimeToEvent <- TADPOLE_Conv_TEST$TimeToEvent
+  
+bConvml <- BSWiMS.model(Surv(TimeToEvent,status)~1,TADPOLE_Conv_TRAINNorm,loops=20,NumberofRepeats = 20)
+#bConvml <- BSWiMS.model(Surv(TimeToEvent,status)~1,TADPOLE_Conv_TRAIN,loops=20,NumberofRepeats = 20)
 pander::pander(bConvml$bagging$Jaccard.SM)
 
 fs <- bConvml$bagging$frequencyTable
 barplot(fs[order(-fs)],las=2,main="Selected Features",cex.names = 0.5)
 sm <- summary(bConvml)
+sm$coefficients$lower
+sm$coefficients$upper
+bConvml$bagging$bagged.model$baggingAnalysis$avgLogPvalues
+
 pander::pander(sm$coefficients)
 pander::pander(bConvml$univariate[bConvml$selectedfeatures,])
 
-ptestl <- predict(bConvml,TADPOLE_Conv_TEST,type="lp")
+#ptestl <- predict(bConvml,TADPOLE_Conv_TEST,type="lp")
+ptestl <- predict(bConvml,TADPOLE_Conv_TESTNorm,type="lp")
 boxplot(ptestl~TADPOLE_Conv_TEST$status)
-ptestr <- predict(bConvml,TADPOLE_Conv_TEST,type="risk")
+#ptestr <- predict(bConvml,TADPOLE_Conv_TEST,type="risk")
+ptestr <- predict(bConvml,TADPOLE_Conv_TESTNorm,type="risk")
 eventCases <- subset(TADPOLE_Conv_TEST,status==1)
 plot(1.0/ptestr[rownames(eventCases)]~eventCases$TimeToEvent)
 pander::pander(cor.test(eventCases$TimeToEvent,1.0/ptestr[rownames(eventCases)],method="spearman"))
@@ -657,6 +693,7 @@ perdsurv <- as.data.frame(cbind(Times=TADPOLE_Conv_TEST$TimeToEvent,
                   Outcome=TADPOLE_Conv_TEST$status,
                   LinearPredictors=ptestl,
                   ptestr))
+boxplot(perdsurv$LinearPredictors~perdsurv$Outcome)
 prSurv <- predictionStats_survival(perdsurv,"BSWiMS: MCI to  AD Conversion")
 pander::pander(prSurv$CIRisk)
 pander::pander(prSurv$CILp)
@@ -696,7 +733,7 @@ pander::pander(riskAnalysis$surdif)
 
 ```{r results = "asis", warning = FALSE, dpi=600, fig.height= 6.0, fig.width= 8.0}
 cmax <- apply(bConvml$bagging$formulaNetwork,2,max)
-cnames <- names(cmax[cmax>=0.125])
+cnames <- names(cmax[cmax>=0.025])
 cmax <- cmax[cnames]
 
 adma <- bConvml$bagging$formulaNetwork[cnames,cnames]
