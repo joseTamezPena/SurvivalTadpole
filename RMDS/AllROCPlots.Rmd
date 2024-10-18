@@ -40,9 +40,9 @@ pander::panderOptions('keep.trailing.zeros',TRUE)
 ## Loading ALL Results
 
 ```{r  results = "asis", warning = FALSE, dpi=600, fig.height= 6.0, fig.width= 8.0}
-load("~/GitHub/SurvivalTadpole/RMDS/TADPOLE_BSWIMS_Results.RData")
 load("~/GitHub/SurvivalTadpole/RMDS/TADPOLE_BESS_Results.RData")
 load("~/GitHub/SurvivalTadpole/RMDS/TADPOLE_LASSO_Results.RData")
+load("~/GitHub/SurvivalTadpole/RMDS/TADPOLE_BSWIMS_Results.RData")
 
 
 par(op)
@@ -73,6 +73,68 @@ legend("bottomright",
 
 ```
 
+
+## Summary tables
+
+
+### MCI to Dementia table
+```{r}
+
+selFeatures <- names(cvBSWiMSRaw$featureFrequency[cvBSWiMSRaw$featureFrequency>5])
+
+clusterFeatures <- fc$names
+
+
+tableMCI_to_Dem <- sm$coefficients[clusterFeatures,
+                                   c("Estimate",
+                                     "lower",
+                                     "HR",
+                                     "upper",
+                                     "full.AUC",
+                                     "Delta.AUC",
+                                     "z.IDI",
+                                     "Frequency")]
+
+nugget <- fc$membership
+names(nugget) <- clusterFeatures
+
+tableMCI_to_Dem$Cluster <- nugget[rownames(tableMCI_to_Dem)]
+tableMCI_to_Dem$CVFreq <- cvBSWiMSRaw$featureFrequency[clusterFeatures]
+
+rnames <- clusterFeatures[str_detect(clusterFeatures,"ST")]
+frnames <- rnames
+rnames <- str_replace_all(rnames,"M_","")
+rnames <- str_replace_all(rnames,"RD_","")
+rnames <- str_replace_all(rnames,"Ba_","")
+rnames <- str_replace_all(rnames,"De_","")
+description <- character()
+
+for (ddet in c(1:length(rnames)))
+{
+  description <- c(description,TADPOLE_D1_D2_Dict$TEXT[str_detect(TADPOLE_D1_D2_Dict$FLDNAME,rnames[ddet])][1])
+}
+names(description) <- frnames
+
+tableMCI_to_Dem$Description <- description[rownames(tableMCI_to_Dem)]
+pander::pander(tableMCI_to_Dem)
+
+
+```
+
+### Heat map
+
+```{r results = "asis", warning = FALSE, dpi=600, fig.height= 6.0, fig.width= 8.0}
+
+hm <- heatMaps(Outcome="status",data=TADPOLECrossMRI[,c("status",clusterFeatures)],title="Heat Map",Scale=TRUE,
+					   theFiveColors=c("black","red","orange","yellow","white"),
+#					   theFiveColors=c("darkred","red","yellow","blue","darkblue"),
+					   hCluster="col",
+					   cexRow=0.50,cexCol=0.65,srtCol=35,
+					   ylab="Subjects",
+					   xlab="Features"
+					   )
+
+```
 
 
 

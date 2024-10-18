@@ -766,7 +766,9 @@ par(op)
 ### MCI to Dementia table
 ```{r}
 
-clusterFeatures <- fc$names
+selFeatures <- names(cvBSWiMSRaw$featureFrequency[cvBSWiMSRaw$featureFrequency>5])
+
+clusterFeatures <- fc$names[fc$names %in% selFeatures]
 
 tableMCI_to_Dem <- sm$coefficients[clusterFeatures,
                                    c("Estimate",
@@ -820,7 +822,7 @@ hm <- heatMaps(Outcome="status",data=TADPOLECrossMRI[,c("status",clusterFeatures
 
 ### Saving the enviroment
 ```{r}
-save.image("./TADPOLE_BSWIMS_Results.RData")
+#save.image("./TADPOLE_BSWIMS_Results.RData")
 
 
 ```
