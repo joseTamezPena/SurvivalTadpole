@@ -1,0 +1,36 @@
+---
+title: "TADPOLE_COMPARISON"
+author: "Jose Tamez"
+date: "`r Sys.Date()`"
+output: 
+  html_document: 
+    toc: yes
+    fig_caption: yes
+    number_sections: yes
+  word_document: 
+    reference_docx: WordStyle_FRESA.docx
+    toc: yes
+    fig_caption: yes
+editor_options:
+  chunk_output_type: console
+---
+
+# Check Poly
+
+```{r}
+library("FRESA.CAD")
+x <- c(1:100)+runif(100)
+z <- c(1:100)+runif(100)
+k <- c(1:100)+runif(100)
+y <- c(1:100)
+ndf <- as.data.frame(model.matrix(y~poly(x + z + k , 2)))
+colnames(ndf) <- c("y","p1","p2")
+ndf$y <- y
+fc <- lm(y~.,ndf)
+print(summary(fc))
+
+bval <- bootstrapValidation_Res(model.formula="y~p1+p2",Outcome="y",data=ndf,plot=TRUE)
+plot(bval)
+
+```
+
