@@ -52,9 +52,21 @@ survmtest <- cvLASSORaw$survMedianTest
 survmtest <- survmtest[complete.cases(survmtest),]
 prBinLASSO <- predictionStats_binary(survmtest[,c(2,3)],"LASSO: MCI to  AD Conversion")
 
+survmtest <- cvRIDGERaw$survMedianTest
+survmtest <- survmtest[complete.cases(survmtest),]
+prBinRIDGE <- predictionStats_binary(survmtest[,c(2,3)],"RIDGE: MCI to  AD Conversion")
+
 survmtest <- cvBESSRaw$survMedianTest
 survmtest <- survmtest[complete.cases(survmtest),]
 prBinBESS <- predictionStats_binary(survmtest[,c(2,3)],"BESS:BIC: MCI to  AD Conversion")
+
+survmtest <- cvBESSERaw$survMedianTest
+survmtest <- survmtest[complete.cases(survmtest),]
+prBinBESSEBIC <- predictionStats_binary(survmtest[,c(2,3)],"BESS:EBIC: MCI to  AD Conversion")
+
+survmtest <- cvBESSGSERaw$survMedianTest
+survmtest <- survmtest[complete.cases(survmtest),]
+prBinBESSGS <- predictionStats_binary(survmtest[,c(2,3)],"BESS:GS: MCI to  AD Conversion")
 
 survmtest <- cvBSWiMSRaw$survMedianTest
 survmtest <- survmtest[complete.cases(survmtest),]
@@ -65,11 +77,17 @@ prBinBSWiMS <- predictionStats_binary(survmtest[,c(2,3)],"MCI to  AD Conversion"
 par(new=TRUE)
 plot(prBinLASSO$ROC.analysis$roc.predictor,col="red")
 par(new=TRUE)
+plot(prBinRIDGE$ROC.analysis$roc.predictor,col="pink")
+par(new=TRUE)
 plot(prBinBESS$ROC.analysis$roc.predictor,col="blue")
+par(new=TRUE)
+plot(prBinBESSEBIC$ROC.analysis$roc.predictor,col="cyan")
+par(new=TRUE)
+plot(prBinBESSGS$ROC.analysis$roc.predictor,col="gold")
 legend("bottomright",
-       legend=c("BSWiMS","LASSO","BIC"),
+       legend=c("BSWiMS","LASSO","RIDGE","BIC","EBIC","BS"),
        lty=1,
-       col=c("black","red","blue"))
+       col=c("black","red","pink","blue","cyan","gold"),cex=0.85)
 
 ```
 
