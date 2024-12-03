@@ -79,6 +79,8 @@ pgzero <- ppoisGzero(survmtest$LinearPredictorsMedian,ho)
 rsdata <- cbind(survmtest$Outcome,pgzero,survmtest$Times)
 riskAnalysis <- RRPlot(rsdata,riskTimeInterval=timeInterval,title="BESS:BIC")
 
+riskAnalysis$keyPoints
+
 pander::pander(riskAnalysis$c.index)
 pander::pander(riskAnalysis$ROCAnalysis$aucs)
 pander::pander(riskAnalysis$cenAUC)

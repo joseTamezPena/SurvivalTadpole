@@ -155,4 +155,19 @@ hm <- heatMaps(Outcome="status",data=TADPOLECrossMRI[,c("status",clusterFeatures
 ```
 
 
+### Heat map
+
+```{r results = "asis", warning = FALSE, dpi=600, fig.height= 6.0, fig.width= 8.0}
+
+hm <- heatMaps(Outcome="status",data=TADPOLECrossMRI,title="Heat Map",Scale=TRUE,
+					   theFiveColors=c("black","red","orange","yellow","white"),
+#					   theFiveColors=c("darkred","red","yellow","blue","darkblue"),
+					   hCluster="col",
+					   cexRow=0.50,cexCol=0.5,srtCol=35,
+					   ylab="Subjects",
+					   xlab="Features"
+					   )
+
+```
+
 
