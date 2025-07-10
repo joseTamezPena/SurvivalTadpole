@@ -69,6 +69,7 @@ TADPOLE_D1_D2[,isArea] <- sqrt(TADPOLE_D1_D2[,isArea])
 
 # Get only cross sectional measurements
 FreeSurfersetCross <- str_detect(colnames(TADPOLE_D1_D2),"UCSFFSX")
+sum(FreeSurfersetCross)
 
 # The subset of baseline measurements
 baselineTadpole <- subset(TADPOLE_D1_D2,VISCODE=="bl")
