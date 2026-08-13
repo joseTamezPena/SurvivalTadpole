@@ -1,4 +1,5 @@
 # SurvivalTadpole
 
 This is the official repository of the manuscript titled "Interpretable multivariate survival models: Improving predictions for conversion from mild cognitive impairment to Alzheimer’s disease via data fusion and machine learning"
-## Link to the paper soon to be added
+
+🔗🔗 https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0321671#sec020
